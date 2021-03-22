@@ -3,6 +3,7 @@
 #include"Platform.h"
 #include<iostream>
 #include<vector>
+
 using namespace std;
 
 
@@ -26,6 +27,8 @@ public:
 	VkRenderPass GetVulkanRenderPass();
 	VkFramebuffer GetVulkanFramebuffer();
 	VkExtent2D GetVulkanSurfaceSize();
+	VkShaderModule CreateShaderModule(const std::vector<char>& code);
+
 
 private:
 
@@ -34,15 +37,14 @@ private:
 	void  _UpdateOSWindow();
 	void  _InitOSSurface();
 
+	void  _InitSurface();
+	void  _DenitSurface();
 
-	void    _InitSurface();
-	void    _DenitSurface();
+	void  _InitSwapchain();
+	void  _DeinitSwapchain();
 
-	void    _InitSwapchain();
-	void    _DeinitSwapchain();
-
-	void    _InitSwapchainImages();
-	void    _DeInitSwapchainImages();
+	void  _InitSwapchainImages();
+	void  _DeInitSwapchainImages();
 
 	void  _InitDepthStencilImage();
 	void  _DeInitDepthStencilImage();
@@ -51,17 +53,21 @@ private:
 	void  _InitRenderPass();
 	void  _DeInitRednderPass();
 
-	void _InitFramebuffers();
-	void _DeInitFramebuffers();
+	void  _InitFramebuffers();
+	void  _DeInitFramebuffers();
 
-	void _InitSynchronization();
-	void _DeInitSynchronization();
+	void  _InitSynchronization();
+	void  _DeInitSynchronization();
+	 
+	void  _CreateGraphicsPipeline();
+	void  _DestroyGraphicsPipeline();
 
+	
 	Renderer   * _renderer = nullptr;
 
 	VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
 
-	VkSurfaceKHR       _surface = VK_NULL_HANDLE;
+	VkSurfaceKHR   _surface = VK_NULL_HANDLE;
 
 	uint32_t _surface_size_x = 512;
 	uint32_t _surface_size_y = 512;
@@ -72,6 +78,7 @@ private:
 
 
 	VkFence _swapchain_image_available = VK_NULL_HANDLE;
+
 
 	VkSurfaceFormatKHR _surface_format = {};
 	VkSurfaceCapabilitiesKHR _surface_capabilities = {};
@@ -84,11 +91,15 @@ private:
 	std::vector<VkImageView> _swapchain_images_views;
 	std::vector<VkFramebuffer> _framebuffer;
 
-
 	VkImage  _depth_stencil_image = VK_NULL_HANDLE;
 	VkDeviceMemory  _depth_stencil_image_memory = VK_NULL_HANDLE;
 	VkImageView _depth_stencil_image_view = VK_NULL_HANDLE;
+
+	VkShaderModule _shaderModule = VK_NULL_HANDLE;
 	
+	VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
+
+	VkPipeline _graphicsPipeline = VK_NULL_HANDLE;
 
 	bool _window_should_run = true;
 

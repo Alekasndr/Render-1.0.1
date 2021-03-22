@@ -80,9 +80,6 @@ void ErrorCheck(VkResult result)
 		case VK_ERROR_INVALID_SHADER_NV:
 			std::cout << "VK_ERROR_INVALID_SHADER_NV" << std::endl;
 			break;
-		case VK_ERROR_INCOMPATIBLE_VERSION_KHR:
-			std::cout << "VK_ERROR_INCOMPATIBLE_VERSION_KHR" << std::endl;
-			break;
 		case VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT:
 			std::cout << "VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT" << std::endl;
 			break;

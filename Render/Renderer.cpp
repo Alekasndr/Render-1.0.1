@@ -8,11 +8,8 @@
 #include"Shared.h"
 #include "Window.h"
 
-#include<iostream>
-#include<sstream>
-#include <cstdlib>
-#include <assert.h>
-#include<vector>
+
+
 
 
 
