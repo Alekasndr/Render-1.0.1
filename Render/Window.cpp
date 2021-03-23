@@ -81,13 +81,16 @@ void Window::EndRender(std::vector<VkSemaphore> wait_semaphore)
 
 	ErrorCheck(vkQueuePresentKHR(_renderer->GetVulkanQueue(), &present_info));
 	ErrorCheck(present_result);
+
 }
 
 void Window::DrawFrame()
 {
+	VkResult present_result = VkResult::VK_RESULT_MAX_ENUM;
+
 	auto device = _renderer->GetVulkanDevice();
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(device, _swapchain, UINT64_MAX, _imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	ErrorCheck(vkAcquireNextImageKHR(device, _swapchain, UINT64_MAX, _imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex));
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -108,20 +111,21 @@ void Window::DrawFrame()
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
-	VkPresentInfoKHR presentInfo{};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = signalSemaphores;
 
 	VkSwapchainKHR swapChains[] = { _swapchain };
+
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = signalSemaphores;
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex;
-	presentInfo.pResults = nullptr;
+	presentInfo.pResults = &present_result;
 
-	vkQueuePresentKHR(_renderer->GetVulkanQueue(), &presentInfo);
-
+	ErrorCheck(vkQueuePresentKHR(_renderer->GetVulkanQueue(), &presentInfo));
+	ErrorCheck(present_result);
+	ErrorCheck(vkQueueWaitIdle(_renderer->GetVulkanQueue()));
 }
 
 std::vector<VkCommandBuffer> Window::GetVulkanCommandBuffer()
@@ -690,7 +694,7 @@ void Window::_CreateCommandBuffers()
 	for (size_t i = 0; i < _commandBuffers.size(); i++) {
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // Optional
+		beginInfo.flags = 0; // Optional
 		beginInfo.pInheritanceInfo = nullptr; // Optional
 
 		if (vkBeginCommandBuffer(_commandBuffers[i], &beginInfo) != VK_SUCCESS) {
@@ -704,8 +708,8 @@ void Window::_CreateCommandBuffers()
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = GetVulkanSurfaceSize();
 
-		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-		renderPassInfo.clearValueCount = 1;
+		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+		renderPassInfo.clearValueCount = 2;
 		renderPassInfo.pClearValues = &clearColor;
 
 		vkCmdBeginRenderPass(_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
