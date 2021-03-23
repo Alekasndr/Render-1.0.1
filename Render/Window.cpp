@@ -487,8 +487,6 @@ void Window::_CreateGraphicsPipeline()
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
-	std::cout << "Vulkan: Viewport created seccessfully" << std::endl;
-
 	VkRect2D scissor{};
 	scissor.offset = { 0, 0 };
 	scissor.extent = GetVulkanSurfaceSize();
@@ -592,7 +590,9 @@ void Window::_DestroyGraphicsPipeline()
 {
 	auto device = _renderer->GetVulkanDevice();
 	vkDestroyPipeline(device, _graphicsPipeline, nullptr);
+	std::cout << "Vulkan: Graphics pipelines destroyed seccessfully" << std::endl;
 	vkDestroyPipelineLayout(device, _pipelineLayout, nullptr);
+	std::cout << "Vulkan: Pipelines layout destroyed seccessfully" << std::endl;
 }
 
 void Window::_CreateCommandPool()
@@ -617,6 +617,7 @@ void Window::_DestroyCommandPool()
 {
 	auto device = _renderer->GetVulkanDevice();
 	vkDestroyCommandPool(device, _commandPool, nullptr);
+	std::cout << "Vulkan: Command pool destroyed seccessfully" << std::endl;
 }
 
 VkShaderModule Window::CreateShaderModule(const std::vector<char>& code)
