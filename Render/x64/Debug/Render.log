@@ -1,0 +1,7 @@
+﻿  Window.cpp
+D:\Render 1.0.1\Render\Window.cpp(74,57): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
+D:\Render 1.0.1\Render\Window.cpp(388,73): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
+D:\Render 1.0.1\Render\Window.cpp(396,62): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
+D:\Render 1.0.1\Render\Window.cpp(398,58): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
+D:\Render 1.0.1\Render\Window.cpp(428,64): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
+  Render.vcxproj -> D:\Render 1.0.1\x64\Debug\Render.exe
