@@ -19,7 +19,9 @@ public:
 
 	void BeginRender();
 	void EndRender( std::vector<VkSemaphore> wait_semaphore);
+	void DrawFrame();
 
+	std::vector<VkCommandBuffer> GetVulkanCommandBuffer();
 	VkRenderPass GetVulkanRenderPass();
 	VkFramebuffer GetVulkanFramebuffer();
 	VkExtent2D GetVulkanSurfaceSize();
@@ -61,7 +63,10 @@ private:
 
 	void _CreateCommandBuffers();
 	void _DestroyCommandBuffers();
-	
+
+	void _CreateSemaphores();
+	void _DestroySemaphores();
+
 	Renderer   * _renderer = nullptr;
 
 	VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
@@ -100,7 +105,8 @@ private:
 
 	VkCommandPool _commandPool = VK_NULL_HANDLE;
 
-	
+	VkSemaphore _imageAvailableSemaphore = VK_NULL_HANDLE;
+	VkSemaphore _renderFinishedSemaphore = VK_NULL_HANDLE;
 
 	bool _window_should_run = true;
 
