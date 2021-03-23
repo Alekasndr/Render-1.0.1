@@ -1,0 +1,7 @@
+﻿  Renderer.cpp
+  Shared.cpp
+  Window.cpp
+  Window_win32.cpp
+  main.cpp
+  Generating Code...
+  Render.vcxproj -> F:\Render\Debug\Render.exe
