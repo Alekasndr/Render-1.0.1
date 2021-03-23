@@ -27,7 +27,6 @@ int main()
 
 	vkCreateCommandPool(r.GetVulkanDevice(), &pool_create_info, nullptr, &comand_pool);
 
-
 	VkCommandBuffer comand_buffer = VK_NULL_HANDLE;
 	VkCommandBufferAllocateInfo comand_buffer_allocate_info{};
 	comand_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -57,7 +56,6 @@ int main()
 			frame_counter = 0;
 			std::cout << "FPS:" << fps << std::endl;
 		}
-
 
 		//Began render
 		w->BeginRender();
@@ -92,7 +90,6 @@ int main()
 		render_pass_begiin_info.pClearValues = clear_value.data();
 
 		vkCmdBeginRenderPass(comand_buffer, &render_pass_begiin_info, VK_SUBPASS_CONTENTS_INLINE);
-		
 
 		vkCmdEndRenderPass(comand_buffer);
 

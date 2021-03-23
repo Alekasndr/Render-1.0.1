@@ -7,7 +7,6 @@
 
 Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name)
 {
-
 	_renderer       = renderer;
 	_surface_size_x = size_x;
 	_surface_size_y = size_y;
@@ -22,7 +21,6 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	_CreateGraphicsPipeline();
 	_InitFramebuffers();
 	_InitSynchronization();
-	
 }
 
 Window::~Window()
@@ -38,7 +36,6 @@ Window::~Window()
 	_DeinitSwapchain();
 	_DenitSurface();
 	_DeInitOSWindow();
-	
 }
 
 void Window::Close()
@@ -62,7 +59,6 @@ void Window::BeginRender()
 	ErrorCheck(vkWaitForFences(device, 1, &_swapchain_image_available, VK_TRUE, UINT64_MAX));
 	ErrorCheck(vkResetFences(device, 1, &_swapchain_image_available));
 	ErrorCheck(vkQueueWaitIdle(_renderer->GetVulkanQueue()));
-
 }
 
 void Window::EndRender(std::vector<VkSemaphore> wait_semaphore)
@@ -77,8 +73,6 @@ void Window::EndRender(std::vector<VkSemaphore> wait_semaphore)
 	present_info.pSwapchains = &_swapchain;
 	present_info.pImageIndices = &_active_swapchain_image_id;
 	present_info.pResults = &present_result;
-
-
 
 	ErrorCheck(vkQueuePresentKHR(_renderer->GetVulkanQueue(), &present_info));
 	ErrorCheck(present_result);
@@ -113,15 +107,12 @@ void Window::_InitSurface()
 		std::exit(-1);
 	}
 
-
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, _surface, &_surface_capabilities);
 
 	if (_surface_capabilities.currentExtent.width < UINT32_MAX) {
 		_surface_size_x = _surface_capabilities.currentExtent.width;
 		_surface_size_y = _surface_capabilities.currentExtent.height;
 	}
-
-
 
 	{
 		uint32_t format_count = 0;
@@ -160,7 +151,6 @@ void Window::_InitSwapchain()
 	/// ////////////////
 	/// </summary>
 
-
 	VkPresentModeKHR persent_mode = VK_PRESENT_MODE_FIFO_KHR;
 	{
 		uint32_t present_mode_count = 0;
@@ -171,7 +161,6 @@ void Window::_InitSwapchain()
 			if (m == VK_PRESENT_MODE_MAILBOX_KHR) persent_mode = m;
 		}
 	}
-
 
 	/// <summary>
 	/// ////////////
@@ -198,7 +187,6 @@ void Window::_InitSwapchain()
 
 	ErrorCheck(vkCreateSwapchainKHR(device, &swapchain_creater_info, nullptr, &_swapchain));
 
-
 	ErrorCheck(vkGetSwapchainImagesKHR(device, _swapchain, &_swapchain_image_count, nullptr));
 }
 
@@ -206,7 +194,6 @@ void Window::_DeinitSwapchain()
 {
 	auto device = _renderer->GetVulkanDevice();
 	vkDestroySwapchainKHR(device, _swapchain, nullptr);
-
 }
 
 void Window::_InitSwapchainImages()
@@ -233,7 +220,6 @@ void Window::_InitSwapchainImages()
 		image_view_create_info.subresourceRange.levelCount      = 1;
 		image_view_create_info.subresourceRange.baseArrayLayer  = 0;
 		image_view_create_info.subresourceRange.layerCount      = 1;
-
 
 		ErrorCheck(vkCreateImageView(device, &image_view_create_info, nullptr, &_swapchain_images_views[i]));
 	}
@@ -281,7 +267,6 @@ void Window::_InitDepthStencilImage()
 
 	}
 
-
 	VkImageCreateInfo image_create_info{};
 	image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	image_create_info.flags = 0;
@@ -300,9 +285,7 @@ void Window::_InitDepthStencilImage()
 	image_create_info.pQueueFamilyIndices = nullptr;
 	image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-
 	vkCreateImage(device, &image_create_info, nullptr, &_depth_stencil_image);
-
 
 	VkMemoryRequirements image_memory_requirement{};
 	vkGetImageMemoryRequirements(device, _depth_stencil_image, &image_memory_requirement);
@@ -310,8 +293,6 @@ void Window::_InitDepthStencilImage()
 	uint32_t memory_index        = FindMemoryTypeIndex(
 		&_renderer->GetVulkanPhysicalDeviceMemoryProperties(),
 		&image_memory_requirement, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	
-
 
 	VkMemoryAllocateInfo memory_allocate_info{};
 	memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -336,7 +317,6 @@ void Window::_InitDepthStencilImage()
 	image_view_create_info.subresourceRange.levelCount = 1;
 	image_view_create_info.subresourceRange.baseArrayLayer = 0;
 	image_view_create_info.subresourceRange.layerCount = 1;
-
 
 	vkCreateImageView(device, &image_view_create_info, nullptr, &_depth_stencil_image_view);
 }
@@ -372,24 +352,19 @@ void Window::_InitRenderPass()
 	attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	attachments[1].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-
 	VkAttachmentReference sub_pass_0_depth_stancil_attachment{};
 	sub_pass_0_depth_stancil_attachment.attachment = 0;
 	sub_pass_0_depth_stancil_attachment.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-
 	std::array< VkAttachmentReference, 1> sub_pass_0_color_attachment{};
 	sub_pass_0_color_attachment[0].attachment = 1;
 	sub_pass_0_color_attachment[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
 
 	std::array< VkSubpassDescription, 1> sub_passes{};
 	sub_passes[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	sub_passes[0].colorAttachmentCount = sub_pass_0_color_attachment.size();
 	sub_passes[0].pColorAttachments = sub_pass_0_color_attachment.data();
 	sub_passes[0].pDepthStencilAttachment = &sub_pass_0_depth_stancil_attachment;
-
-
 
 	VkRenderPassCreateInfo render_pass_create_info{};
 	render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -398,24 +373,17 @@ void Window::_InitRenderPass()
 	render_pass_create_info.subpassCount = sub_passes.size();
 	render_pass_create_info.pSubpasses = sub_passes.data();
 
-
 	ErrorCheck(vkCreateRenderPass(device, &render_pass_create_info, nullptr, &_render_pass));
 
 }
 
-
-
-
 void Window::_DeInitRednderPass()
 {
 	vkDestroyRenderPass(_renderer->GetVulkanDevice(), _render_pass, nullptr);
-
 }
 
 void Window::_InitFramebuffers()
 {
-	
-
 	_framebuffer.resize(_swapchain_image_count);
 	for(uint32_t i = 0; i < _swapchain_image_count; ++i){
 		std::array<VkImageView, 2> attachments{};
@@ -455,10 +423,6 @@ void Window::_DeInitSynchronization()
 {
 	vkDestroyFence(_renderer->GetVulkanDevice(), _swapchain_image_available, nullptr);
 }
-
-
-	
-
 
 static std::vector<char> readFile(const std::string& filename)
 {
@@ -521,7 +485,7 @@ void Window::_CreateGraphicsPipeline()
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
-	std::cout << " viewport created seccessfully" << std::endl;
+	std::cout << "Vulkan: Viewport created seccessfully" << std::endl;
 
 	VkRect2D scissor{};
 	scissor.offset = { 0, 0 };
@@ -581,17 +545,15 @@ void Window::_CreateGraphicsPipeline()
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
 	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
+		throw std::runtime_error("Vulkan: Failed to create pipeline layout!");
 	}
 	else {
-		std::cout << "pipeline layout created seccessfully" << std::endl;
+		std::cout << "Vulkan: Pipeline layout created seccessfully" << std::endl;
 	}
 
 	VkPipelineDepthStencilStateCreateInfo pipelineDepthStencelStateCreateInfo{};
 	pipelineDepthStencelStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	pipelineDepthStencelStateCreateInfo.depthTestEnable = VK_FALSE;
-	
-
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -612,17 +574,16 @@ void Window::_CreateGraphicsPipeline()
 	pipelineInfo.basePipelineIndex = -1; // Optional
 
 	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create graphics pipeline!");
+		throw std::runtime_error("Vulkan: Failed to create graphics pipeline!");
 	}
 	else {
-		std::cout << "graphics pipelines created seccessfully" << std::endl;
+		std::cout << "Vulkan: Graphics pipelines created seccessfully" << std::endl;
 	}
 
 	vkDestroyShaderModule(device, fragShaderModule, nullptr);
-	std::cout << "frag shader module destroyed seccessfully" << std::endl;
+	std::cout << "Vulkan: Frag shader module destroyed seccessfully" << std::endl;
 	vkDestroyShaderModule(device, vertShaderModule, nullptr);
-	std::cout << "vert shader module destroyed seccessfully" << std::endl;
-
+	std::cout << "Vulkan: Vert shader module destroyed seccessfully" << std::endl;
 }
 
 void Window::_DestroyGraphicsPipeline()
@@ -639,15 +600,13 @@ VkShaderModule Window::CreateShaderModule(const std::vector<char>& code)
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.codeSize = code.size();
 	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
 	
 	if (vkCreateShaderModule(device, &createInfo, nullptr, &_shaderModule) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create shader module!");
+		throw std::runtime_error("Vulkan: Failed to create shader module!");
 	}
 	else{
-		std::cout << "shader module created seccessfully" << std::endl;
+		std::cout << "Vulkan: Shader module created seccessfully" << std::endl;
 	} 
-
 	return _shaderModule;
 }
 

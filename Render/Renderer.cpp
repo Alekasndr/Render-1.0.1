@@ -1,18 +1,9 @@
-
-
-
 #include"BUILD_OPTIONS.h"
 #include"Platform.h"
 
 #include "Renderer.h"
 #include"Shared.h"
 #include "Window.h"
-
-
-
-
-
-
 
 Renderer::Renderer()
 {
@@ -21,8 +12,6 @@ Renderer::Renderer()
 	_InitInstance();
 	_InitDebug();
 	_InitDevice();
-
-
 }
 
 Renderer::~Renderer()
@@ -31,7 +20,6 @@ Renderer::~Renderer()
 	_DeInitDevice();
 	_DeInitDebug();
 	_DeInitInstance();
-	
 }
 
 Window* Renderer::OpenWindow(uint32_t size_x, uint32_t size_y, std::string name)
@@ -83,7 +71,6 @@ const VkPhysicalDeviceMemoryProperties& Renderer::GetVulkanPhysicalDeviceMemoryP
 	return _gpu_memory_propertie;
 }
 
-
 void Renderer::_SetupLayersAndExtentions() {
 //	_instance_extentions.push_back(VK_KHR_DISPLAY_EXTENSION_NAME);
 	_instance_extentions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
@@ -92,19 +79,14 @@ void Renderer::_SetupLayersAndExtentions() {
 	_device_extentions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 }
 
-
-
 void Renderer::_InitInstance()
 {
-	
-
 	VkApplicationInfo application_info{};
 	application_info.sType                    = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	application_info.apiVersion			      = VK_MAKE_VERSION(1, 2, 154);
 	application_info.applicationVersion       = VK_MAKE_VERSION(1, 1, 0);
 	application_info.pApplicationName         = "Vulkan Renderer 1";
 	application_info.pNext = NULL;
-
 
 	VkInstanceCreateInfo instance_create_info{};
 	instance_create_info.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -121,7 +103,6 @@ void Renderer::_InitInstance()
 
 void Renderer::_DeInitInstance()
 {
-
 	vkDestroyInstance(_instance, nullptr);
 	_instance = nullptr;
 	std::cout << "Vulkan: Instance sucessfully destroyed" << std::endl;
@@ -170,8 +151,6 @@ void Renderer::_InitDevice()
 		std::cout << std::endl;
 	}
 
-
-
 	float queue_priorities[]{ 1.0f };
 	VkDeviceQueueCreateInfo device_queue_create_info{};
 	device_queue_create_info.sType                 = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -180,7 +159,6 @@ void Renderer::_InitDevice()
 	device_queue_create_info.queueCount            = 1;
 	device_queue_create_info.pQueuePriorities      = queue_priorities;
 	device_queue_create_info.pNext = NULL;
-
 
 	VkDeviceCreateInfo device_create_info{}; 
 	device_create_info.sType                        = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -191,12 +169,10 @@ void Renderer::_InitDevice()
 	device_create_info.ppEnabledExtensionNames = _device_extentions.data();
 	device_create_info.pNext = NULL;
 
-
 	ErrorCheck(vkCreateDevice(_gpu ,&device_create_info, nullptr, &_device));
 	
 	vkGetDeviceQueue(_device, _graphics_family_index, 0, &_queue);
 //	vkGetDeviceQueue(_device, _graphics_family_index, 1, &_queue);
-	
 	
 	std::cout << "Vulkan: Device successfully initialized "
 		<< std::endl;
@@ -241,7 +217,6 @@ VulkanDebugCallback(
 		stream << "DEBUG:";
 	}
 
-
 	stream << "@[" << layer_prefix << "]:";
 	stream << msg << std::endl;
 	
@@ -258,7 +233,6 @@ VulkanDebugCallback(
 		MessageBoxA(NULL, stream.str().c_str(), "Vulkan Error!", 0);
 	}
 #endif // _WIN32
-
 
 	return false;
 }

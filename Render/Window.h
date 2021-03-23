@@ -6,11 +6,7 @@
 
 using namespace std;
 
-
 class Renderer;
-
-
-
 
 class Window
 {
@@ -28,7 +24,6 @@ public:
 	VkFramebuffer GetVulkanFramebuffer();
 	VkExtent2D GetVulkanSurfaceSize();
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
-
 
 private:
 
@@ -49,7 +44,6 @@ private:
 	void  _InitDepthStencilImage();
 	void  _DeInitDepthStencilImage();
 
-
 	void  _InitRenderPass();
 	void  _DeInitRednderPass();
 
@@ -61,7 +55,6 @@ private:
 	 
 	void  _CreateGraphicsPipeline();
 	void  _DestroyGraphicsPipeline();
-
 	
 	Renderer   * _renderer = nullptr;
 
@@ -75,10 +68,7 @@ private:
 	uint32_t   _swapchain_image_count = 2;
 	uint32_t _active_swapchain_image_id = UINT32_MAX;
 
-
-
 	VkFence _swapchain_image_available = VK_NULL_HANDLE;
-
 
 	VkSurfaceFormatKHR _surface_format = {};
 	VkSurfaceCapabilitiesKHR _surface_capabilities = {};
@@ -103,12 +93,10 @@ private:
 
 	bool _window_should_run = true;
 
-
 #if VK_USE_PLATFORM_WIN32_KHR
 	HINSTANCE         _win32_instance = NULL;
 	HWND              _win32_window   = NULL;
 	std::string       _win32_class_name;
 	static uint64_t   _win32_class_id_counter;
 #endif
-
 };

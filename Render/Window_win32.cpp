@@ -1,11 +1,8 @@
-
-
 #include <string>
 #include "BUILD_OPTIONS.h"
 #include "Platform.h"
 #include"Window.h"
 #include "Renderer.h"
-
 
 #include <assert.h>
 
@@ -109,7 +106,6 @@ void Window::_UpdateOSWindow()
 		DispatchMessage(&msg);
 	}
 }
-
 
 void Window::_InitOSSurface()
 {
