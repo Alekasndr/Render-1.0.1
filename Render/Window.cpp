@@ -22,6 +22,7 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	_InitFramebuffers();
 	_InitSynchronization();
 	_CreateCommandPool();
+	_CreateCommandBuffers();
 }
 
 Window::~Window()
@@ -618,6 +619,54 @@ void Window::_DestroyCommandPool()
 	auto device = _renderer->GetVulkanDevice();
 	vkDestroyCommandPool(device, _commandPool, nullptr);
 	std::cout << "Vulkan: Command pool destroyed seccessfully" << std::endl;
+}
+
+void Window::_CreateCommandBuffers()
+{
+	auto device = _renderer->GetVulkanDevice();
+	_commandBuffers.resize(_framebuffer.size());
+
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = _commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = (uint32_t)_commandBuffers.size();
+
+	if (vkAllocateCommandBuffers(device, &allocInfo, _commandBuffers.data()) != VK_SUCCESS) {
+		throw std::runtime_error("Vulkan: Failed to allocate command buffers!");
+	}
+	else {
+		std::cout << "Vulkan: Command buffers allocate seccessfully" << std::endl;
+	}
+
+	for (size_t i = 0; i < _commandBuffers.size(); i++) {
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // Optional
+		beginInfo.pInheritanceInfo = nullptr; // Optional
+
+		if (vkBeginCommandBuffer(_commandBuffers[i], &beginInfo) != VK_SUCCESS) {
+			throw std::runtime_error("Vulkan: Failed to begin recording command buffer!");
+		}
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = _render_pass;
+		renderPassInfo.framebuffer = _framebuffer[i];
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = GetVulkanSurfaceSize();
+
+		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clearColor;
+
+		vkCmdBeginRenderPass(_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	}
+}
+
+void Window::_DestroyCommandBuffers()
+{
+
 }
 
 VkShaderModule Window::CreateShaderModule(const std::vector<char>& code)
