@@ -56,6 +56,9 @@ private:
 	void  _CreateGraphicsPipeline();
 	void  _DestroyGraphicsPipeline();
 	
+	void _CreateCommandPool();
+	void _DestroyCommandPool();
+	
 	Renderer   * _renderer = nullptr;
 
 	VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
@@ -90,6 +93,8 @@ private:
 	VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
 
 	VkPipeline _graphicsPipeline = VK_NULL_HANDLE;
+
+	VkCommandPool _commandPool = VK_NULL_HANDLE;
 
 	bool _window_should_run = true;
 

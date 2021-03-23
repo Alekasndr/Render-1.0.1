@@ -21,12 +21,14 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	_CreateGraphicsPipeline();
 	_InitFramebuffers();
 	_InitSynchronization();
+	_CreateCommandPool();
 }
 
 Window::~Window()
 {
 	vkQueueWaitIdle(_renderer->GetVulkanQueue());
 	
+	_DestroyCommandPool();
 	_DeInitSynchronization();
 	_DeInitFramebuffers();
 	_DestroyGraphicsPipeline();
@@ -591,6 +593,30 @@ void Window::_DestroyGraphicsPipeline()
 	auto device = _renderer->GetVulkanDevice();
 	vkDestroyPipeline(device, _graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(device, _pipelineLayout, nullptr);
+}
+
+void Window::_CreateCommandPool()
+{
+	auto device = _renderer->GetVulkanDevice();
+
+	VkCommandPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolInfo.queueFamilyIndex = _renderer->GetVulkanGraphicsQueueFamilyIndex();
+	poolInfo.flags = 0; // Optional
+
+	if (vkCreateCommandPool(device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS) {
+		throw std::runtime_error("Vulkan: Failed to create command pool!");
+	}
+	else {
+		std::cout << "Vulkan: Command pool created seccessfully" << std::endl;
+	}
+
+}
+
+void Window::_DestroyCommandPool()
+{
+	auto device = _renderer->GetVulkanDevice();
+	vkDestroyCommandPool(device, _commandPool, nullptr);
 }
 
 VkShaderModule Window::CreateShaderModule(const std::vector<char>& code)
