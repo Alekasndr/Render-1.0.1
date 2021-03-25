@@ -19,7 +19,9 @@ public:
 
 	void BeginRender();
 	void EndRender( std::vector<VkSemaphore> wait_semaphore);
+	void DrawFrame();
 
+	std::vector<VkCommandBuffer> GetVulkanCommandBuffer();
 	VkRenderPass GetVulkanRenderPass();
 	VkFramebuffer GetVulkanFramebuffer();
 	VkExtent2D GetVulkanSurfaceSize();
@@ -58,7 +60,13 @@ private:
 	
 	void _CreateCommandPool();
 	void _DestroyCommandPool();
-	
+
+	void _CreateCommandBuffers();
+	void _DestroyCommandBuffers();
+
+	void _CreateSemaphores();
+	void _DestroySemaphores();
+
 	Renderer   * _renderer = nullptr;
 
 	VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
@@ -83,6 +91,7 @@ private:
 	std::vector<VkImage>  _swapchain_images;
 	std::vector<VkImageView> _swapchain_images_views;
 	std::vector<VkFramebuffer> _framebuffer;
+	std::vector<VkCommandBuffer> _commandBuffers;
 
 	VkImage  _depth_stencil_image = VK_NULL_HANDLE;
 	VkDeviceMemory  _depth_stencil_image_memory = VK_NULL_HANDLE;
@@ -95,6 +104,9 @@ private:
 	VkPipeline _graphicsPipeline = VK_NULL_HANDLE;
 
 	VkCommandPool _commandPool = VK_NULL_HANDLE;
+
+	VkSemaphore _imageAvailableSemaphore = VK_NULL_HANDLE;
+	VkSemaphore _renderFinishedSemaphore = VK_NULL_HANDLE;
 
 	bool _window_should_run = true;
 

@@ -22,12 +22,15 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	_InitFramebuffers();
 	_InitSynchronization();
 	_CreateCommandPool();
+	_CreateCommandBuffers();
+	_CreateSemaphores();
 }
 
 Window::~Window()
 {
 	vkQueueWaitIdle(_renderer->GetVulkanQueue());
 	
+	_DestroySemaphores();
 	_DestroyCommandPool();
 	_DeInitSynchronization();
 	_DeInitFramebuffers();
@@ -78,6 +81,56 @@ void Window::EndRender(std::vector<VkSemaphore> wait_semaphore)
 
 	ErrorCheck(vkQueuePresentKHR(_renderer->GetVulkanQueue(), &present_info));
 	ErrorCheck(present_result);
+
+}
+
+void Window::DrawFrame()
+{
+	VkResult present_result = VkResult::VK_RESULT_MAX_ENUM;
+
+	auto device = _renderer->GetVulkanDevice();
+	uint32_t imageIndex;
+	ErrorCheck(vkAcquireNextImageKHR(device, _swapchain, UINT64_MAX, _imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex));
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	VkSemaphore waitSemaphores[] = { _imageAvailableSemaphore };
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &_commandBuffers[imageIndex];
+
+	VkSemaphore signalSemaphores[] = { _renderFinishedSemaphore };
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+
+	if (vkQueueSubmit(_renderer->GetVulkanQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+		throw std::runtime_error("failed to submit draw command buffer!");
+	}
+
+
+	VkSwapchainKHR swapChains[] = { _swapchain };
+
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = signalSemaphores;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapChains;
+	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.pResults = &present_result;
+
+	ErrorCheck(vkQueuePresentKHR(_renderer->GetVulkanQueue(), &presentInfo));
+	ErrorCheck(present_result);
+	ErrorCheck(vkQueueWaitIdle(_renderer->GetVulkanQueue()));
+}
+
+std::vector<VkCommandBuffer> Window::GetVulkanCommandBuffer()
+{
+	return _commandBuffers;
 }
 
 VkRenderPass Window::GetVulkanRenderPass()
@@ -487,8 +540,6 @@ void Window::_CreateGraphicsPipeline()
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
-	std::cout << "Vulkan: Viewport created seccessfully" << std::endl;
-
 	VkRect2D scissor{};
 	scissor.offset = { 0, 0 };
 	scissor.extent = GetVulkanSurfaceSize();
@@ -592,7 +643,9 @@ void Window::_DestroyGraphicsPipeline()
 {
 	auto device = _renderer->GetVulkanDevice();
 	vkDestroyPipeline(device, _graphicsPipeline, nullptr);
+	std::cout << "Vulkan: Graphics pipelines destroyed seccessfully" << std::endl;
 	vkDestroyPipelineLayout(device, _pipelineLayout, nullptr);
+	std::cout << "Vulkan: Pipelines layout destroyed seccessfully" << std::endl;
 }
 
 void Window::_CreateCommandPool()
@@ -617,6 +670,82 @@ void Window::_DestroyCommandPool()
 {
 	auto device = _renderer->GetVulkanDevice();
 	vkDestroyCommandPool(device, _commandPool, nullptr);
+	std::cout << "Vulkan: Command pool destroyed seccessfully" << std::endl;
+}
+
+void Window::_CreateCommandBuffers()
+{
+	auto device = _renderer->GetVulkanDevice();
+	_commandBuffers.resize(_framebuffer.size());
+
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = _commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = (uint32_t)_commandBuffers.size();
+
+	if (vkAllocateCommandBuffers(device, &allocInfo, _commandBuffers.data()) != VK_SUCCESS) {
+		throw std::runtime_error("Vulkan: Failed to allocate command buffers!");
+	}
+	else {
+		std::cout << "Vulkan: Command buffers allocate seccessfully" << std::endl;
+	}
+
+	for (size_t i = 0; i < _commandBuffers.size(); i++) {
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = 0; // Optional
+		beginInfo.pInheritanceInfo = nullptr; // Optional
+
+		if (vkBeginCommandBuffer(_commandBuffers[i], &beginInfo) != VK_SUCCESS) {
+			throw std::runtime_error("Vulkan: Failed to begin recording command buffer!");
+		}
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = _render_pass;
+		renderPassInfo.framebuffer = _framebuffer[i];
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = GetVulkanSurfaceSize();
+
+		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+		renderPassInfo.clearValueCount = 2;
+		renderPassInfo.pClearValues = &clearColor;
+
+		vkCmdBeginRenderPass(_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+		vkCmdDraw(_commandBuffers[i], 3, 1, 0, 0);
+		vkCmdEndRenderPass(_commandBuffers[i]);
+
+		if (vkEndCommandBuffer(_commandBuffers[i]) != VK_SUCCESS) {
+			throw std::runtime_error("Vulkan: Failed to record command buffer!");
+		}
+	}
+}
+
+void Window::_DestroyCommandBuffers()
+{
+
+}
+
+void Window::_CreateSemaphores()
+{
+	auto device = _renderer->GetVulkanDevice();
+	VkSemaphoreCreateInfo semaphoreInfo{};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_imageAvailableSemaphore) != VK_SUCCESS ||
+		vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS) {
+
+		throw std::runtime_error("Vulkan: Failed to create semaphores!");
+	}
+}
+
+void Window::_DestroySemaphores()
+{
+	auto device = _renderer->GetVulkanDevice();
+	vkDestroySemaphore(device, _renderFinishedSemaphore, nullptr);
+	vkDestroySemaphore(device, _imageAvailableSemaphore, nullptr);
 }
 
 VkShaderModule Window::CreateShaderModule(const std::vector<char>& code)
