@@ -18,7 +18,6 @@ int main()
 	uint64_t fps = 0;
 
 	while (r.Run()) {
-		//CPU logic calculation
 
 		++frame_counter;
 		if (last_time + std::chrono::seconds(1) < timer.now()) {
@@ -26,12 +25,9 @@ int main()
 			fps = frame_counter;
 			frame_counter = 0;
 			std::cout << "FPS:" << fps << std::endl;
-		//Began render
+		}
+
 		w->DrawFrame();
-		
 	}
-
-	
-
 	return 0;
 }
