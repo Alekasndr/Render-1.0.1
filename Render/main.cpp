@@ -5,29 +5,33 @@
 #include<iostream>
 using namespace std;
 
-constexpr double PI = 3.141592653589793238462643;
-constexpr double CIRCLE_RED = PI * 2;
-constexpr double CIRCLE_THIRD = CIRCLE_RED / 3.0;
-constexpr double CIRCLE_THIRD_1 = 0;
-constexpr double CIRCLE_THIRD_2 = CIRCLE_THIRD;
-constexpr double CIRCLE_THIRD_3 = CIRCLE_THIRD * 2;
-
 int main()
 {
 	Renderer r;
 	
 	auto w = r.OpenWindow(800, 600, "test");
 
+	float color_rotator = 0.0f;
+	auto timer = std::chrono::steady_clock();
+	auto last_time = timer.now();
+	uint64_t frame_counter = 0;
+	uint64_t fps = 0;
 
 	while (r.Run()) {
 		//CPU logic calculation
 
+		++frame_counter;
+		if (last_time + std::chrono::seconds(1) < timer.now()) {
+			last_time = timer.now();
+			fps = frame_counter;
+			frame_counter = 0;
+			std::cout << "FPS:" << fps << std::endl;
 		//Began render
 		w->DrawFrame();
 		
 	}
 
-	vkQueueWaitIdle(r.GetVulkanQueue());
+	
 
 	return 0;
 }

@@ -20,7 +20,6 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	_InitRenderPass();
 	_CreateGraphicsPipeline();
 	_InitFramebuffers();
-	_InitSynchronization();
 	_CreateCommandPool();
 	_CreateCommandBuffers();
 	_CreateSemaphores();
@@ -32,7 +31,6 @@ Window::~Window()
 	
 	_DestroySemaphores();
 	_DestroyCommandPool();
-	_DeInitSynchronization();
 	_DeInitFramebuffers();
 	_DestroyGraphicsPipeline();
 	_DeInitRednderPass();
@@ -52,36 +50,6 @@ bool Window::Update()
 {
 	_UpdateOSWindow();
 	return _window_should_run;
-}
-
-void Window::BeginRender()
-{
-	auto device = _renderer->GetVulkanDevice();
-	ErrorCheck(vkAcquireNextImageKHR(device, _swapchain, 
-		UINT64_MAX, VK_NULL_HANDLE, 
-		_swapchain_image_available, 
-		&_active_swapchain_image_id));
-	ErrorCheck(vkWaitForFences(device, 1, &_swapchain_image_available, VK_TRUE, UINT64_MAX));
-	ErrorCheck(vkResetFences(device, 1, &_swapchain_image_available));
-	ErrorCheck(vkQueueWaitIdle(_renderer->GetVulkanQueue()));
-}
-
-void Window::EndRender(std::vector<VkSemaphore> wait_semaphore)
-{
-	VkResult present_result = VkResult::VK_RESULT_MAX_ENUM;
-
-	VkPresentInfoKHR present_info{};
-	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	present_info.waitSemaphoreCount = wait_semaphore.size();
-	present_info.pWaitSemaphores = wait_semaphore.data();
-	present_info.swapchainCount = 1;
-	present_info.pSwapchains = &_swapchain;
-	present_info.pImageIndices = &_active_swapchain_image_id;
-	present_info.pResults = &present_result;
-
-	ErrorCheck(vkQueuePresentKHR(_renderer->GetVulkanQueue(), &present_info));
-	ErrorCheck(present_result);
-
 }
 
 void Window::DrawFrame()
@@ -110,7 +78,6 @@ void Window::DrawFrame()
 	if (vkQueueSubmit(_renderer->GetVulkanQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
-
 
 	VkSwapchainKHR swapChains[] = { _swapchain };
 
@@ -465,20 +432,6 @@ void Window::_DeInitFramebuffers()
 	}
 }
 
-void Window::_InitSynchronization()
-{
-	VkFenceCreateInfo fence_create_info{};
-	fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-
-	vkCreateFence(_renderer->GetVulkanDevice(), &fence_create_info, nullptr, &_swapchain_image_available);
-	
-}
-
-void Window::_DeInitSynchronization()
-{
-	vkDestroyFence(_renderer->GetVulkanDevice(), _swapchain_image_available, nullptr);
-}
-
 static std::vector<char> readFile(const std::string& filename)
 {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -725,7 +678,7 @@ void Window::_CreateCommandBuffers()
 
 void Window::_DestroyCommandBuffers()
 {
-
+	vkFreeCommandBuffers(_renderer->GetVulkanDevice(), _commandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
 }
 
 void Window::_CreateSemaphores()
