@@ -17,8 +17,6 @@ public:
 	void Close();
 	bool Update();
 
-	void BeginRender();
-	void EndRender( std::vector<VkSemaphore> wait_semaphore);
 	void DrawFrame();
 
 	std::vector<VkCommandBuffer> GetVulkanCommandBuffer();
@@ -51,9 +49,6 @@ private:
 
 	void  _InitFramebuffers();
 	void  _DeInitFramebuffers();
-
-	void  _InitSynchronization();
-	void  _DeInitSynchronization();
 	 
 	void  _CreateGraphicsPipeline();
 	void  _DestroyGraphicsPipeline();
