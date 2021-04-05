@@ -57,6 +57,7 @@ private:
 	std::vector<const char*> _instance_extentions;
 	std::vector<const char*> _device_extentions;
 
+
 	VkDebugReportCallbackEXT  _debug_report = VK_NULL_HANDLE;
 	VkDebugReportCallbackCreateInfoEXT debug_callback_create_info = {};
 };

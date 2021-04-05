@@ -75,8 +75,16 @@ void Renderer::_SetupLayersAndExtentions() {
 //	_instance_extentions.push_back(VK_KHR_DISPLAY_EXTENSION_NAME);
 	_instance_extentions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 	_instance_extentions.push_back(PLATFORM_SURFACE_EXTENSION_NAME);
-
 	_device_extentions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+	uint32_t numInstanceExtension = 0;
+	vkEnumerateInstanceExtensionProperties(nullptr, &numInstanceExtension, nullptr);
+	if (numInstanceExtension != 0) {
+		std::vector<VkExtensionProperties> _supported_device_extentions(numInstanceExtension);
+		vkEnumerateInstanceExtensionProperties(nullptr, &numInstanceExtension, _supported_device_extentions.data());
+	}
+
+	std::vector<const char*> _supported_device_extentions;
 }
 
 void Renderer::_InitInstance()
@@ -84,8 +92,8 @@ void Renderer::_InitInstance()
 	VkApplicationInfo application_info{};
 	application_info.sType                    = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	application_info.apiVersion			      = VK_MAKE_VERSION(1, 2, 154);
-	application_info.applicationVersion       = VK_MAKE_VERSION(1, 1, 0);
-	application_info.pApplicationName         = "Vulkan Renderer 1";
+	application_info.applicationVersion       = VK_MAKE_VERSION(1, 1, 2);
+	application_info.pApplicationName         = "Vulkan Renderer 1.0.2";
 	application_info.pNext = NULL;
 
 	VkInstanceCreateInfo instance_create_info{};
@@ -169,6 +177,10 @@ void Renderer::_InitDevice()
 	device_create_info.ppEnabledExtensionNames = _device_extentions.data();
 	device_create_info.pNext = NULL;
 
+	VkPhysicalDeviceFeatures supported_physical_device_feature;
+
+	vkGetPhysicalDeviceFeatures(_gpu, &supported_physical_device_feature);
+
 	ErrorCheck(vkCreateDevice(_gpu ,&device_create_info, nullptr, &_device));
 	
 	vkGetDeviceQueue(_device, _graphics_family_index, 0, &_queue);
@@ -236,10 +248,6 @@ VulkanDebugCallback(
 
 	return false;
 }
-
-
-
-
 
 void Renderer::_SetupDebug()
 {
