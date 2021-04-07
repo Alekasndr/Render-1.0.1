@@ -59,8 +59,8 @@ private:
 	void _CreateCommandBuffers();
 	void _DestroyCommandBuffers();
 
-	void _CreateSemaphores();
-	void _DestroySemaphores();
+	void createSyncObjects();
+	void cleanup();
 
 	Renderer   * _renderer = nullptr;
 
@@ -109,6 +109,8 @@ private:
 
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
+	std::vector<VkFence> inFlightFences;
+	std::vector<VkFence> imagesInFlight;
 	size_t currentFrame = 0;
 
 
