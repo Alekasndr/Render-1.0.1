@@ -29,7 +29,8 @@ Window::~Window()
 {
 	vkQueueWaitIdle(_renderer->GetVulkanQueue());
 
-	cleanup();
+	destroySyncObjects();
+	_DestroyCommandBuffers();
 	_DestroyCommandPool();
 	_DeInitFramebuffers();
 	_DestroyGraphicsPipeline();
@@ -57,11 +58,17 @@ void Window::DrawFrame()
 	auto device = _renderer->GetVulkanDevice();
 	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 	vkResetFences(device, 1, &inFlightFences[currentFrame]);
-
-	VkResult present_result = VkResult::VK_RESULT_MAX_ENUM;
 	uint32_t imageIndex;
 
-	ErrorCheck(vkAcquireNextImageKHR(device, _swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex));
+	VkResult result = vkAcquireNextImageKHR(device, _swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		recreateSwapChain();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		throw std::runtime_error("Vulkan: Failed to acquire swap chain image!");
+	}
 
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)
 	if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
@@ -99,13 +106,20 @@ void Window::DrawFrame()
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex;
-	presentInfo.pResults = &present_result;
+	presentInfo.pResults = &result;
 
-	ErrorCheck(vkQueuePresentKHR(_renderer->GetVulkanQueue(), &presentInfo));
-	ErrorCheck(present_result);
-	ErrorCheck(vkQueueWaitIdle(_renderer->GetVulkanQueue()));
+	ErrorCheck(result = vkQueuePresentKHR(_renderer->GetVulkanQueue(), &presentInfo));
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+		recreateSwapChain();
+	}
+	else if (result != VK_SUCCESS) {
+		throw std::runtime_error("Vulkan: Failed to present swap chain image!");
+	}
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+	ErrorCheck(vkQueueWaitIdle(_renderer->GetVulkanQueue()));
 }
 
 std::vector<VkCommandBuffer> Window::GetVulkanCommandBuffer()
@@ -720,7 +734,7 @@ void Window::createSyncObjects()
 	std::cout << "Vulkan: Synchronization objects created seccessfully" << std::endl;
 }
 
-void Window::cleanup()
+void Window::destroySyncObjects()
 {
 	auto device = _renderer->GetVulkanDevice();
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -729,6 +743,50 @@ void Window::cleanup()
 		vkDestroyFence(device, inFlightFences[i], nullptr);
 		std::cout << "Vulkan: Destroyed semaphore and fance seccessfully" << std::endl;
 	}
+}
+
+void Window::cleanup()
+{
+	auto device = _renderer->GetVulkanDevice();
+	cleanupSwapChain();
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+		vkDestroyFence(device, inFlightFences[i], nullptr);
+		std::cout << "Vulkan: Destroyed semaphore and fance seccessfully" << std::endl;
+	}
+
+	_DestroyCommandPool();
+
+	vkDestroyDevice(device, nullptr);
+
+	vkDestroySurfaceKHR(_renderer->GetVulkanInstance(), _surface, nullptr);
+	vkDestroyInstance(_renderer->GetVulkanInstance(), nullptr);
+
+	_DeInitOSWindow();
+}
+
+void Window::recreateSwapChain()
+{
+	vkQueueWaitIdle(_renderer->GetVulkanQueue());
+
+	_InitSwapchain();
+	_InitSwapchainImages();
+	_InitRenderPass();
+	_CreateGraphicsPipeline();
+	_InitFramebuffers();
+	_CreateCommandBuffers();
+}
+
+void Window::cleanupSwapChain()
+{
+	_DeInitFramebuffers();
+	_DestroyCommandBuffers();
+	_DestroyGraphicsPipeline();
+	_DeInitRednderPass();
+	_DeInitSwapchainImages();
+	_DeinitSwapchain();
 }
 
 VkShaderModule Window::CreateShaderModule(const std::vector<char>& code)

@@ -60,7 +60,11 @@ private:
 	void _DestroyCommandBuffers();
 
 	void createSyncObjects();
+	void destroySyncObjects();
+
 	void cleanup();
+	void recreateSwapChain();
+	void cleanupSwapChain();
 
 	Renderer   * _renderer = nullptr;
 
@@ -112,6 +116,8 @@ private:
 	std::vector<VkFence> inFlightFences;
 	std::vector<VkFence> imagesInFlight;
 	size_t currentFrame = 0;
+
+	bool framebufferResized = false;
 
 
 #if VK_USE_PLATFORM_WIN32_KHR
