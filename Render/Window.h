@@ -1,6 +1,7 @@
 #pragma once
 
 #include"Platform.h"
+#include"VertexStruct.h"
 #include<iostream>
 #include<vector>
 
@@ -104,15 +105,13 @@ private:
 
 	VkCommandPool _commandPool = VK_NULL_HANDLE;
 
-	//VkSemaphore _imageAvailableSemaphore = VK_NULL_HANDLE;
-	//VkSemaphore _renderFinishedSemaphore = VK_NULL_HANDLE;
-
 	bool _window_should_run = true;
 
 	const int MAX_FRAMES_IN_FLIGHT = 2;
 
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
+
 	std::vector<VkFence> inFlightFences;
 	std::vector<VkFence> imagesInFlight;
 	size_t currentFrame = 0;
