@@ -100,10 +100,17 @@ private:
 
 	VkCommandPool _commandPool = VK_NULL_HANDLE;
 
-	VkSemaphore _imageAvailableSemaphore = VK_NULL_HANDLE;
-	VkSemaphore _renderFinishedSemaphore = VK_NULL_HANDLE;
+	//VkSemaphore _imageAvailableSemaphore = VK_NULL_HANDLE;
+	//VkSemaphore _renderFinishedSemaphore = VK_NULL_HANDLE;
 
 	bool _window_should_run = true;
+
+	const int MAX_FRAMES_IN_FLIGHT = 2;
+
+	std::vector<VkSemaphore> imageAvailableSemaphores;
+	std::vector<VkSemaphore> renderFinishedSemaphores;
+	size_t currentFrame = 0;
+
 
 #if VK_USE_PLATFORM_WIN32_KHR
 	HINSTANCE         _win32_instance = NULL;
