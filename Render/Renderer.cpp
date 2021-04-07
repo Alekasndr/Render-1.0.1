@@ -71,6 +71,12 @@ const VkPhysicalDeviceMemoryProperties& Renderer::GetVulkanPhysicalDeviceMemoryP
 	return _gpu_memory_propertie;
 }
 
+const VkDebugReportCallbackEXT Renderer::GetVulkanDebugReportCallback() const
+{
+	return _debug_report;
+}
+
+
 void Renderer::_SetupLayersAndExtentions() {
 //	_instance_extentions.push_back(VK_KHR_DISPLAY_EXTENSION_NAME);
 	_instance_extentions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);

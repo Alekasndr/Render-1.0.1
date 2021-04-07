@@ -28,6 +28,7 @@ public:
 	const uint32_t                            GetVulkanGraphicsQueueFamilyIndex() const;
 	const VkPhysicalDeviceProperties       &  GetVulkanPhysicalDeviceProperties() const;
 	const VkPhysicalDeviceMemoryProperties &  GetVulkanPhysicalDeviceMemoryProperties() const;
+	const VkDebugReportCallbackEXT            GetVulkanDebugReportCallback() const;
 
 private:
 	void _SetupLayersAndExtentions();
