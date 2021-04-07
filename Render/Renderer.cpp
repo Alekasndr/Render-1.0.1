@@ -77,14 +77,19 @@ void Renderer::_SetupLayersAndExtentions() {
 	_instance_extentions.push_back(PLATFORM_SURFACE_EXTENSION_NAME);
 	_device_extentions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
+	/*
 	uint32_t numInstanceExtension = 0;
 	vkEnumerateInstanceExtensionProperties(nullptr, &numInstanceExtension, nullptr);
 	if (numInstanceExtension != 0) {
-		std::vector<VkExtensionProperties> _supported_device_extentions(numInstanceExtension);
-		vkEnumerateInstanceExtensionProperties(nullptr, &numInstanceExtension, _supported_device_extentions.data());
+		std::vector<VkExtensionProperties> _supported_instance_extensions(numInstanceExtension);
+		vkEnumerateInstanceExtensionProperties(nullptr, &numInstanceExtension, _supported_instance_extensions.data());
+		std::cout << "Instance Extension: \n";
+		for (auto& i : _supported_instance_extensions) {
+			std::cout << "  " << i.extensionName << std::endl;
+		}
+		std::cout << std::endl;
 	}
-
-	std::vector<const char*> _supported_device_extentions;
+	*/
 }
 
 void Renderer::_InitInstance()
@@ -147,6 +152,8 @@ void Renderer::_InitDevice()
 		}
 
 	}
+
+	/*
 	{
 		uint32_t layer_count = 0;
 		vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
@@ -158,6 +165,7 @@ void Renderer::_InitDevice()
 		}
 		std::cout << std::endl;
 	}
+	*/
 
 	float queue_priorities[]{ 1.0f };
 	VkDeviceQueueCreateInfo device_queue_create_info{};
@@ -176,8 +184,6 @@ void Renderer::_InitDevice()
 	device_create_info.enabledExtensionCount = _device_extentions.size();
 	device_create_info.ppEnabledExtensionNames = _device_extentions.data();
 	device_create_info.pNext = NULL;
-
-	VkPhysicalDeviceFeatures supported_physical_device_feature;
 
 	vkGetPhysicalDeviceFeatures(_gpu, &supported_physical_device_feature);
 

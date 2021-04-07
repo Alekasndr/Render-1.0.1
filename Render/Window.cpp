@@ -58,12 +58,12 @@ void Window::DrawFrame()
 
 	auto device = _renderer->GetVulkanDevice();
 	uint32_t imageIndex;
-	ErrorCheck(vkAcquireNextImageKHR(device, _swapchain, UINT64_MAX, _imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex));
+	ErrorCheck(vkAcquireNextImageKHR(device, _swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex));
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = { _imageAvailableSemaphore };
+	VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
@@ -71,7 +71,7 @@ void Window::DrawFrame()
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &_commandBuffers[imageIndex];
 
-	VkSemaphore signalSemaphores[] = { _renderFinishedSemaphore };
+	VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -93,6 +93,8 @@ void Window::DrawFrame()
 	ErrorCheck(vkQueuePresentKHR(_renderer->GetVulkanQueue(), &presentInfo));
 	ErrorCheck(present_result);
 	ErrorCheck(vkQueueWaitIdle(_renderer->GetVulkanQueue()));
+
+	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 std::vector<VkCommandBuffer> Window::GetVulkanCommandBuffer()
@@ -684,21 +686,31 @@ void Window::_DestroyCommandBuffers()
 void Window::_CreateSemaphores()
 {
 	auto device = _renderer->GetVulkanDevice();
+	
+	imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_imageAvailableSemaphore) != VK_SUCCESS ||
-		vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS) {
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+			vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
 
-		throw std::runtime_error("Vulkan: Failed to create semaphores!");
+			throw std::runtime_error("Vulkan: Failed to create semaphores for a frame!");
+		}
+		std::cout << "Vulkan: Semaphores created seccessfully" << std::endl;
 	}
 }
 
 void Window::_DestroySemaphores()
 {
 	auto device = _renderer->GetVulkanDevice();
-	vkDestroySemaphore(device, _renderFinishedSemaphore, nullptr);
-	vkDestroySemaphore(device, _imageAvailableSemaphore, nullptr);
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+		std::cout << "Vulkan: Destroyed created seccessfully" << std::endl;
+	}
 }
 
 VkShaderModule Window::CreateShaderModule(const std::vector<char>& code)
