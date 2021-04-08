@@ -67,6 +67,11 @@ private:
 	void recreateSwapChain();
 	void cleanupSwapChain();
 
+	void createVertexBuffer();
+	void destroyVertexBuffer();
+
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
 	Renderer   * _renderer = nullptr;
 
 	VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
@@ -117,6 +122,11 @@ private:
 	size_t currentFrame = 0;
 
 	bool framebufferResized = false;
+
+	VkBuffer vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
+	
+
 
 
 #if VK_USE_PLATFORM_WIN32_KHR
