@@ -21,6 +21,7 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	_CreateGraphicsPipeline();
 	_InitFramebuffers();
 	_CreateCommandPool();
+	createVertexBuffer();
 	_CreateCommandBuffers();
 	createSyncObjects();
 }
@@ -31,6 +32,7 @@ Window::~Window()
 
 	destroySyncObjects();
 	_DestroyCommandBuffers();
+	destroyVertexBuffer();
 	_DestroyCommandPool();
 	_DeInitFramebuffers();
 	_DestroyGraphicsPipeline();
@@ -480,8 +482,8 @@ static std::vector<char> readFile(const std::string& filename)
 void Window::_CreateGraphicsPipeline()
 {
 	auto device = _renderer->GetVulkanDevice();
-	auto vertShaderCode = readFile("D:/Render 1.0.1/shaders/vert.spv");
-	auto fragShaderCode = readFile("D:/Render 1.0.1/shaders/frag.spv");
+	auto vertShaderCode = readFile("../shaders/vert.spv");
+	auto fragShaderCode = readFile("../shaders/frag.spv");
 
 	VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
 	VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
@@ -579,6 +581,10 @@ void Window::_CreateGraphicsPipeline()
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 0; // Optional
+	pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
 	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("Vulkan: Failed to create pipeline layout!");
@@ -696,8 +702,15 @@ void Window::_CreateCommandBuffers()
 		renderPassInfo.pClearValues = &clearColor;
 
 		vkCmdBeginRenderPass(_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		
 		vkCmdBindPipeline(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
-		vkCmdDraw(_commandBuffers[i], 3, 1, 0, 0);
+
+		VkBuffer vertexBuffers[] = { vertexBuffer };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(_commandBuffers[i], 0, 1, vertexBuffers, offsets);
+
+		vkCmdDraw(_commandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+
 		vkCmdEndRenderPass(_commandBuffers[i]);
 
 		if (vkEndCommandBuffer(_commandBuffers[i]) != VK_SUCCESS) {
@@ -753,6 +766,8 @@ void Window::cleanup()
 	auto device = _renderer->GetVulkanDevice();
 	cleanupSwapChain();
 
+	destroyVertexBuffer();
+
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
 		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
@@ -790,6 +805,59 @@ void Window::cleanupSwapChain()
 	_DeInitRednderPass();
 	_DeInitSwapchainImages();
 	_DeinitSwapchain();
+}
+
+void Window::createVertexBuffer()
+{
+	auto device = _renderer->GetVulkanDevice();
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = sizeof(vertices[0]) * vertices.size();
+	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(device, &bufferInfo, nullptr, &vertexBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("Vulkan: Failed to create vertex buffer!");
+	}
+
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements(device, vertexBuffer, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, 
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	if (vkAllocateMemory(device, &allocInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS) {
+		throw std::runtime_error("Vulkan: Failed to allocate vertex buffer memory!");
+	}
+
+	vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
+
+	void* data;
+	vkMapMemory(device, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
+	memcpy(data, vertices.data(), (size_t)bufferInfo.size);
+	vkUnmapMemory(device, vertexBufferMemory);
+}
+
+void Window::destroyVertexBuffer()
+{
+	vkDestroyBuffer(_renderer->GetVulkanDevice(), vertexBuffer, nullptr);
+	vkFreeMemory(_renderer->GetVulkanDevice(), vertexBufferMemory, nullptr);
+}
+
+uint32_t Window::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+	VkPhysicalDeviceMemoryProperties memProperties;
+	vkGetPhysicalDeviceMemoryProperties(_renderer->GetVulkanPhysicalDevice(), &memProperties);
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+			return i;
+		}
+	}
+
+	throw std::runtime_error("Vulkan: Failed to find suitable memory type!");
 }
 
 VkShaderModule Window::CreateShaderModule(const std::vector<char>& code)
