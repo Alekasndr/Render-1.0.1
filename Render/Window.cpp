@@ -482,8 +482,8 @@ static std::vector<char> readFile(const std::string& filename)
 void Window::_CreateGraphicsPipeline()
 {
 	auto device = _renderer->GetVulkanDevice();
-	auto vertShaderCode = readFile("D:/Render 1.0.1/shaders/vert.spv");
-	auto fragShaderCode = readFile("D:/Render 1.0.1/shaders/frag.spv");
+	auto vertShaderCode = readFile("../shaders/vert.spv");
+	auto fragShaderCode = readFile("../shaders/frag.spv");
 
 	VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
 	VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
@@ -581,6 +581,10 @@ void Window::_CreateGraphicsPipeline()
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 0; // Optional
+	pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
 	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("Vulkan: Failed to create pipeline layout!");
