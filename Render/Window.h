@@ -70,7 +70,12 @@ private:
 	void createVertexBuffer();
 	void destroyVertexBuffer();
 
+	void createIndexBuffer();
+	void destroyIndexBuffer();
+
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 	Renderer   * _renderer = nullptr;
 
@@ -126,7 +131,8 @@ private:
 	VkBuffer vertexBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
 	
-
+	VkBuffer indexBuffer = VK_NULL_HANDLE;
+	VkDeviceMemory indexBufferMemory = VK_NULL_HANDLE;
 
 
 #if VK_USE_PLATFORM_WIN32_KHR
