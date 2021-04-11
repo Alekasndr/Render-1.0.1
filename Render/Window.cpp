@@ -5,6 +5,12 @@
 #include<array>
 #include<fstream>
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <chrono>
+
 Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name)
 {
 	_renderer       = renderer;
@@ -18,6 +24,7 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	_InitSwapchainImages();
 	_InitDepthStencilImage();
 	_InitRenderPass();
+	createDescriptorSetLayout();
 	_CreateGraphicsPipeline();
 	_InitFramebuffers();
 	_CreateCommandPool();
@@ -38,6 +45,7 @@ Window::~Window()
 	_DestroyCommandPool();
 	_DeInitFramebuffers();
 	_DestroyGraphicsPipeline();
+	destroyDescriptorSetLayout();
 	_DeInitRednderPass();
 	_DeInitDepthStencilImage();
 	_DeInitSwapchainImages();
@@ -64,8 +72,11 @@ void Window::DrawFrame()
 	vkResetFences(device, 1, &inFlightFences[currentFrame]);
 	uint32_t imageIndex;
 
-	VkResult result = vkAcquireNextImageKHR(device, _swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
+	uint32_t imageIndex;
+	VkResult result = vkAcquireNextImageKHR(device, 
+		_swapchain, UINT64_MAX, 
+		imageAvailableSemaphores[currentFrame],
+		VK_NULL_HANDLE, &imageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		recreateSwapChain();
 		return;
@@ -81,6 +92,7 @@ void Window::DrawFrame()
 	// Mark the image as now being in use by this frame
 	imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
+	updateUniformBuffer(imageIndex);
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -583,8 +595,8 @@ void Window::_CreateGraphicsPipeline()
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0; // Optional
-	pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -726,6 +738,7 @@ void Window::_CreateCommandBuffers()
 void Window::_DestroyCommandBuffers()
 {
 	vkFreeCommandBuffers(_renderer->GetVulkanDevice(), _commandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
+	std::cout << "Vulkan: Comman pool was free seccessfully" << std::endl;
 }
 
 void Window::createSyncObjects()
@@ -770,6 +783,9 @@ void Window::cleanup()
 	auto device = _renderer->GetVulkanDevice();
 	cleanupSwapChain();
 
+	destroyDescriptorSetLayout();
+
+	destroyIndexBuffer();
 	destroyVertexBuffer();
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -798,6 +814,7 @@ void Window::recreateSwapChain()
 	_InitRenderPass();
 	_CreateGraphicsPipeline();
 	_InitFramebuffers();
+	createUniformBuffers();
 	_CreateCommandBuffers();
 }
 
@@ -809,6 +826,7 @@ void Window::cleanupSwapChain()
 	_DeInitRednderPass();
 	_DeInitSwapchainImages();
 	_DeinitSwapchain();
+	destroyUniformBuffers
 }
 
 void Window::createVertexBuffer()
@@ -833,12 +851,14 @@ void Window::createVertexBuffer()
 
 	vkDestroyBuffer(device, stagingBuffer, nullptr);
 	vkFreeMemory(device, stagingBufferMemory, nullptr);
+	std::cout << "Vulkan: Create index buffer and fance seccessfully" << std::endl;
 }
 
 void Window::destroyVertexBuffer()
 {
 	vkDestroyBuffer(_renderer->GetVulkanDevice(), vertexBuffer, nullptr);
 	vkFreeMemory(_renderer->GetVulkanDevice(), vertexBufferMemory, nullptr);
+	std::cout << "Vulkan: Destroyed vertex buffer seccessfully" << std::endl;
 }
 
 void Window::createIndexBuffer()
@@ -863,6 +883,7 @@ void Window::createIndexBuffer()
 
 	vkDestroyBuffer(device, stagingBuffer, nullptr);
 	vkFreeMemory(device, stagingBufferMemory, nullptr);
+	std::cout << "Vulkan: Create index buffer seccessfully" << std::endl;
 }
 
 void Window::destroyIndexBuffer()
@@ -870,6 +891,85 @@ void Window::destroyIndexBuffer()
 	auto device = _renderer->GetVulkanDevice();
 	vkDestroyBuffer(device, indexBuffer, nullptr);
 	vkFreeMemory(device, indexBufferMemory, nullptr);
+
+	std::cout << "Vulkan: Destroyed index buffer seccessfully" << std::endl;
+}
+
+void Window::createDescriptorSetLayout()
+{
+	auto device = _renderer->GetVulkanDevice();
+	VkDescriptorSetLayoutBinding uboLayoutBinding{};
+	uboLayoutBinding.binding = 0;
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutBinding.descriptorCount = 1;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &uboLayoutBinding;
+
+	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+		throw std::runtime_error("Vulkan: Failed to create descriptor set layout!");
+	}
+}
+
+void Window::destroyDescriptorSetLayout()
+{
+	vkDestroyDescriptorSetLayout(_renderer->GetVulkanDevice(), descriptorSetLayout, nullptr);
+	std::cout << "Vulkan: Destroyed description set layout seccessfully" << std::endl;
+}
+
+void Window::createUniformBuffers()
+{
+	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+	uniformBuffers.resize(_swapchain_images.size());
+	uniformBuffersMemory.resize(_swapchain_images.size());
+
+	for (size_t i = 0; i < _swapchain_images.size(); i++) {
+		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+		std::cout << "Vulkan: Create uniform buffer seccessfully" << std::endl;
+	}
+}
+
+void Window::destroyUniformBuffers()
+{
+	auto device = _renderer->GetVulkanDevice();
+	for (size_t i = 0; i < _swapchain_images.size(); i++) {
+		vkDestroyBuffer(device, uniformBuffers[i], nullptr);
+		vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+		std::cout << "Vulkan: Destroy uniform buffer seccessfully" << std::endl;
+	}
+}
+
+void Window::updateUniformBuffer(uint32_t currentImage)
+{
+	auto device = _renderer->GetVulkanDevice();
+
+	static auto startTime = std::chrono::high_resolution_clock::now();
+
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	float time = std::chrono::duration<float, 
+		std::chrono::seconds::period>(currentTime - startTime).count();
+
+	UniformBufferObject ubo{};
+	ubo.model = glm::rotate(glm::mat4(1.0f), 
+		time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), 
+		glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	ubo.proj = glm::perspective(glm::radians(45.0f), 
+		_surface_size_x / (float)_surface_size_y, 0.1f, 10.0f);
+
+	ubo.proj[1][1] *= -1;
+
+	void* data;
+	vkMapMemory(device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+	memcpy(data, &ubo, sizeof(ubo));
+	vkUnmapMemory(device, uniformBuffersMemory[currentImage]);
 }
 
 uint32_t Window::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)

@@ -164,6 +164,7 @@
     <ClInclude Include="Platform.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shared.h" />
+    <ClInclude Include="UniformBufferObject.h" />
     <ClInclude Include="VertexStruct.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
