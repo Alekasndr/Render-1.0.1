@@ -80,6 +80,11 @@ private:
 	void createUniformBuffers();
 	void destroyUniformBuffers();
 
+	void createDescriptorPool();
+	void destroyDescriptorPool();
+
+	void createDescriptorSets();
+
 	void updateUniformBuffer(uint32_t currentImage);
 
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
@@ -146,8 +151,11 @@ private:
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 
-	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+	VkDescriptorSetLayout descriptorSetLayout;
+
+
+	VkDescriptorPool descriptorPool;
+	std::vector<VkDescriptorSet> descriptorSets;
 
 
 #if VK_USE_PLATFORM_WIN32_KHR
