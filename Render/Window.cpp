@@ -32,6 +32,7 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	_InitFramebuffers();
 	_CreateCommandPool();
 	createTextureImage();
+	createTextureImageView();
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffers();
@@ -51,6 +52,7 @@ Window::~Window()
 	destroyUniformBuffers();
 	destroyIndexBuffer();
 	destroyVertexBuffer();
+	destroyTextureImageView();
 	destroyTextureImage();
 	_DestroyCommandPool();
 	_DeInitFramebuffers();
@@ -280,22 +282,7 @@ void Window::_InitSwapchainImages()
 	ErrorCheck(vkGetSwapchainImagesKHR(device, _swapchain, &_swapchain_image_count, _swapchain_images.data()));
 
 	for (uint32_t i = 0; i < _swapchain_image_count; ++i) {
-		VkImageViewCreateInfo image_view_create_info{};
-		image_view_create_info.sType          = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		image_view_create_info.image          = _swapchain_images[i];
-		image_view_create_info.viewType       = VK_IMAGE_VIEW_TYPE_2D;
-		image_view_create_info.format         = _surface_format.format;
-		image_view_create_info.components.r   = VK_COMPONENT_SWIZZLE_IDENTITY;
-		image_view_create_info.components.g   = VK_COMPONENT_SWIZZLE_IDENTITY;
-		image_view_create_info.components.b   = VK_COMPONENT_SWIZZLE_IDENTITY;
-		image_view_create_info.components.a   = VK_COMPONENT_SWIZZLE_IDENTITY;
-		image_view_create_info.subresourceRange.aspectMask      = VK_IMAGE_ASPECT_COLOR_BIT;
-		image_view_create_info.subresourceRange.baseMipLevel    = 0;
-		image_view_create_info.subresourceRange.levelCount      = 1;
-		image_view_create_info.subresourceRange.baseArrayLayer  = 0;
-		image_view_create_info.subresourceRange.layerCount      = 1;
-
-		ErrorCheck(vkCreateImageView(device, &image_view_create_info, nullptr, &_swapchain_images_views[i]));
+		_swapchain_images_views[i] = createImageView(_swapchain_images[i], _surface_format.format);
 	}
 }
 
@@ -795,6 +782,8 @@ void Window::cleanup()
 	auto device = _renderer->GetVulkanDevice();
 	cleanupSwapChain();
 
+	destroyTextureImageView();
+
 	destroyTextureImage();
 
 	destroyDescriptorSetLayout();
@@ -1102,6 +1091,19 @@ void Window::destroyTextureImage()
 	std::cout << "Vulkan: Destroy texture image seccessfully" << std::endl;
 }
 
+void Window::createTextureImageView()
+{
+	textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+	std::cout << "Vulkan: Create texture image view seccessfully" << std::endl;
+}
+
+void Window::destroyTextureImageView()
+{
+	auto device = _renderer->GetVulkanDevice();
+	vkDestroyImageView(device, textureImageView, nullptr);
+	std::cout << "Vulkan: Destroy texture image view seccessfully" << std::endl;
+}
+
 uint32_t Window::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
@@ -1276,6 +1278,28 @@ void Window::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, u
 	);
 
 	endSingleTimeCommands(commandBuffer);
+}
+
+VkImageView Window::createImageView(VkImage image, VkFormat format)
+{
+	auto device = _renderer->GetVulkanDevice();
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = image;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = format;
+	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	VkImageView imageView;
+	if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+		throw std::runtime_error("Vulkan: Flailed to create texture image view!");
+	}
+
+	return imageView;
 }
 
 VkCommandBuffer Window::beginSingleTimeCommands()
