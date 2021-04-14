@@ -137,6 +137,8 @@ void Renderer::_InitDevice()
 		_gpu = gpu_list[0];
 		vkGetPhysicalDeviceProperties(_gpu, &_gpu_propertie);
 		vkGetPhysicalDeviceMemoryProperties(_gpu, &_gpu_memory_propertie);
+		vkGetPhysicalDeviceFeatures(_gpu, &supported_physical_device_feature);
+		supported_physical_device_feature.samplerAnisotropy = VK_TRUE;
 	}
 	{
 		uint32_t family_count = 0;
@@ -144,6 +146,8 @@ void Renderer::_InitDevice()
 		std::vector < VkQueueFamilyProperties> familu_property_list(family_count);
 		vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &family_count, familu_property_list.data());
 	
+		
+
 		bool found = false;
 		for (uint32_t i = 0; i < family_count; ++i) {
 			if (familu_property_list[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
@@ -189,9 +193,10 @@ void Renderer::_InitDevice()
 	device_create_info.pQueueCreateInfos            = &device_queue_create_info;
 	device_create_info.enabledExtensionCount = _device_extentions.size();
 	device_create_info.ppEnabledExtensionNames = _device_extentions.data();
+	device_create_info.pEnabledFeatures = &supported_physical_device_feature;
 	device_create_info.pNext = NULL;
 
-	vkGetPhysicalDeviceFeatures(_gpu, &supported_physical_device_feature);
+	
 
 	ErrorCheck(vkCreateDevice(_gpu ,&device_create_info, nullptr, &_device));
 	

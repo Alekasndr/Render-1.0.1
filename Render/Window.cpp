@@ -33,6 +33,7 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	_CreateCommandPool();
 	createTextureImage();
 	createTextureImageView();
+	createTextureSampler();
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffers();
@@ -52,6 +53,7 @@ Window::~Window()
 	destroyUniformBuffers();
 	destroyIndexBuffer();
 	destroyVertexBuffer();
+	destroyTextureSampler();
 	destroyTextureImageView();
 	destroyTextureImage();
 	_DestroyCommandPool();
@@ -782,12 +784,10 @@ void Window::cleanup()
 	auto device = _renderer->GetVulkanDevice();
 	cleanupSwapChain();
 
+	destroyTextureSampler();
 	destroyTextureImageView();
-
 	destroyTextureImage();
-
 	destroyDescriptorSetLayout();
-
 	destroyIndexBuffer();
 	destroyVertexBuffer();
 
@@ -799,9 +799,7 @@ void Window::cleanup()
 	}
 
 	_DestroyCommandPool();
-
 	vkDestroyDevice(device, nullptr);
-
 	vkDestroySurfaceKHR(_renderer->GetVulkanInstance(), _surface, nullptr);
 	vkDestroyInstance(_renderer->GetVulkanInstance(), nullptr);
 
@@ -1102,6 +1100,38 @@ void Window::destroyTextureImageView()
 	auto device = _renderer->GetVulkanDevice();
 	vkDestroyImageView(device, textureImageView, nullptr);
 	std::cout << "Vulkan: Destroy texture image view seccessfully" << std::endl;
+}
+
+void Window::createTextureSampler()
+{
+	auto device = _renderer->GetVulkanDevice();
+	VkSamplerCreateInfo samplerInfo{};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR;
+	samplerInfo.minFilter = VK_FILTER_LINEAR;
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.anisotropyEnable = VK_TRUE;
+	samplerInfo.maxAnisotropy = _renderer->GetVulkanPhysicalDeviceProperties().limits.maxSamplerAnisotropy;
+	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+	samplerInfo.compareEnable = VK_FALSE;
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = 0.0f;
+
+	if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
+		throw std::runtime_error("Vulkan: Failed to create texture sampler!");
+	}
+}
+
+void Window::destroyTextureSampler()
+{
+	auto device = _renderer->GetVulkanDevice();
+	vkDestroySampler(device, textureSampler, nullptr);
 }
 
 uint32_t Window::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
