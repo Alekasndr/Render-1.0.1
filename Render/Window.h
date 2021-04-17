@@ -29,31 +29,31 @@ public:
 
 private:
 
-	void  _InitOSWindow();
-	void  _DeInitOSWindow();
-	void  _UpdateOSWindow();
-	void  _InitOSSurface();
+	void	_InitOSWindow();
+	void _DeInitOSWindow();
+	void _UpdateOSWindow();
+	void _InitOSSurface();
 
-	void  _InitSurface();
-	void  _DenitSurface();
+	void _InitSurface();
+	void _DenitSurface();
 
-	void  _InitSwapchain();
-	void  _DeinitSwapchain();
+	void _InitSwapchain();
+	void _DeinitSwapchain();
 
-	void  _InitSwapchainImages();
-	void  _DeInitSwapchainImages();
+	void _InitSwapchainImages();
+	void _DeInitSwapchainImages();
 
-	void  _InitDepthStencilImage();
-	void  _DeInitDepthStencilImage();
+	void _InitDepthStencilImage();
+	void _DeInitDepthStencilImage();
 
-	void  _InitRenderPass();
-	void  _DeInitRednderPass();
+	void _InitRenderPass();
+	void _DeInitRednderPass();
 
-	void  _InitFramebuffers();
-	void  _DeInitFramebuffers();
+	void _InitFramebuffers();
+	void _DeInitFramebuffers();
 	 
-	void  _CreateGraphicsPipeline();
-	void  _DestroyGraphicsPipeline();
+	void _CreateGraphicsPipeline();
+	void _DestroyGraphicsPipeline();
 	
 	void _CreateCommandPool();
 	void _DestroyCommandPool();
@@ -102,10 +102,12 @@ private:
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-	VkImageView createImageView(VkImage image, VkFormat format);
-
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 	VkCommandBuffer beginSingleTimeCommands();
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	VkFormat findDepthFormat();
+	bool hasStencilComponent(VkFormat format);
 
 	Renderer   * _renderer = nullptr;
 
