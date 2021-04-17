@@ -51,6 +51,7 @@ private:
 	VkPhysicalDeviceMemoryProperties  _gpu_memory_propertie = {};
 	VkPhysicalDeviceFeatures          supported_physical_device_feature = {};
 
+
 	uint32_t          _graphics_family_index = 0;
 
 	Window*           _window     = nullptr;
