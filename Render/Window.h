@@ -96,6 +96,8 @@ private:
 	void createTextureSampler();
 	void destroyTextureSampler();
 
+	void loadModel();
+
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
@@ -115,8 +117,8 @@ private:
 
 	VkSurfaceKHR   _surface = VK_NULL_HANDLE;
 
-	uint32_t _surface_size_x = 512;
-	uint32_t _surface_size_y = 512;
+	uint32_t _surface_size_x = 800;
+	uint32_t _surface_size_y = 600;
 	std::string _window_name;
 	uint32_t   _swapchain_image_count = 2;
 	uint32_t _active_swapchain_image_id = UINT32_MAX;
@@ -160,6 +162,9 @@ private:
 
 	bool framebufferResized = false;
 
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
 	VkBuffer vertexBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
 	
@@ -179,6 +184,12 @@ private:
 
 	VkImageView textureImageView = VK_NULL_HANDLE;
 	VkSampler textureSampler = VK_NULL_HANDLE;
+
+	const uint32_t WIDTH = 800;
+	const uint32_t HEIGHT = 600;
+
+	const std::string MODEL_PATH = "../models/viking_room.obj";
+	const std::string TEXTURE_PATH = "../textures/viking_room.png";
 
 #if VK_USE_PLATFORM_WIN32_KHR
 	HINSTANCE         _win32_instance = NULL;
