@@ -4,6 +4,7 @@
 #include<assert.h>
 #include<array>
 #include<fstream>
+#include <unordered_map>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -1121,6 +1122,8 @@ void Window::loadModel()
 		throw std::runtime_error(warn + err);
 	}
 
+	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
 	for (const auto& shape : shapes) {
 		for (const auto& index : shape.mesh.indices) {
 			Vertex vertex{};
@@ -1143,8 +1146,12 @@ void Window::loadModel()
 
 			vertex.color = { 1.0f, 1.0f, 1.0f };
 
-			vertices.push_back(vertex);
-			indices.push_back(indices.size());
+			if (uniqueVertices.count(vertex) == 0) {
+				uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+				vertices.push_back(vertex);
+			}
+
+			indices.push_back(uniqueVertices[vertex]);
 		}
 	}
 }
