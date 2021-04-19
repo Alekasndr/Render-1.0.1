@@ -29,6 +29,7 @@ public:
 	const VkPhysicalDeviceProperties       &  GetVulkanPhysicalDeviceProperties() const;
 	const VkPhysicalDeviceMemoryProperties &  GetVulkanPhysicalDeviceMemoryProperties() const;
 	const VkDebugReportCallbackEXT            GetVulkanDebugReportCallback() const;
+	const VkSampleCountFlagBits               GetVulkanMass() const;
 
 private:
 	void _SetupLayersAndExtentions();
@@ -42,6 +43,9 @@ private:
 	void _SetupDebug();
 	void _InitDebug();
 	void _DeInitDebug();
+
+	VkSampleCountFlagBits getMaxUsableSampleCount();
+	bool isDeviceSuitable(VkPhysicalDevice device);
 
 	VkInstance                        _instance      = VK_NULL_HANDLE;
 	VkPhysicalDevice                  _gpu           = VK_NULL_HANDLE;
@@ -63,5 +67,7 @@ private:
 
 	VkDebugReportCallbackEXT  _debug_report = VK_NULL_HANDLE;
 	VkDebugReportCallbackCreateInfoEXT debug_callback_create_info = {};
+
+	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 };
 

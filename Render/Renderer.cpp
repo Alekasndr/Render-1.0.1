@@ -76,6 +76,11 @@ const VkDebugReportCallbackEXT Renderer::GetVulkanDebugReportCallback() const
 	return _debug_report;
 }
 
+const VkSampleCountFlagBits Renderer::GetVulkanMass() const
+{
+	return msaaSamples;
+}
+
 
 void Renderer::_SetupLayersAndExtentions() {
 //	_instance_extentions.push_back(VK_KHR_DISPLAY_EXTENSION_NAME);
@@ -134,7 +139,15 @@ void Renderer::_InitDevice()
 		vkEnumeratePhysicalDevices(_instance, &gpu_count, nullptr);
 		std::vector<VkPhysicalDevice> gpu_list(gpu_count);
 		vkEnumeratePhysicalDevices(_instance, &gpu_count, gpu_list.data());
-		_gpu = gpu_list[0];
+
+		for (const auto& device : gpu_list) {
+			if (isDeviceSuitable(device)) {
+				_gpu = device;
+				msaaSamples = getMaxUsableSampleCount();
+				break;
+			}
+		}
+
 		vkGetPhysicalDeviceProperties(_gpu, &_gpu_propertie);
 		vkGetPhysicalDeviceMemoryProperties(_gpu, &_gpu_memory_propertie);
 		vkGetPhysicalDeviceFeatures(_gpu, &supported_physical_device_feature);
@@ -314,6 +327,28 @@ void Renderer::_DeInitDebug()
 	_debug_report = VK_NULL_HANDLE;
 	std::cout << "Vulkan: Debug report destroyed" << std::endl;
 }
+
+VkSampleCountFlagBits Renderer::getMaxUsableSampleCount()
+{
+		VkPhysicalDeviceProperties physicalDeviceProperties;
+		vkGetPhysicalDeviceProperties(_gpu, &physicalDeviceProperties);
+
+		VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+		if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
+		if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
+		if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
+		if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
+		if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
+		if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
+
+		return VK_SAMPLE_COUNT_1_BIT;
+}
+
+bool Renderer::isDeviceSuitable(VkPhysicalDevice device)
+{
+	return true;
+}
+
 
 #else 
 void Renderer::_SetupDebug() {};
