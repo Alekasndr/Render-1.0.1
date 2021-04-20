@@ -328,11 +328,11 @@ void Window::_DeInitDepthStencilImage()
 void Window::_InitRenderPass()
 {
 	auto device = _renderer->GetVulkanDevice();
-
-	std::array< VkAttachmentDescription, 2> attachments{};
+	auto msaaSamples = _renderer->GetVulkanMsaa();
+	std::array< VkAttachmentDescription, 3> attachments{};
 	attachments[0].flags = 0;
 	attachments[0].format = findDepthFormat();
-	attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+	attachments[0].samples = msaaSamples;
 	attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -342,11 +342,20 @@ void Window::_InitRenderPass()
 
 	attachments[1].flags = 0;
 	attachments[1].format = _surface_format.format;
-	attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+	attachments[1].samples = msaaSamples;
 	attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachments[1].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	attachments[1].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	attachments[2].format = _surface_format.format;
+	attachments[2].samples = VK_SAMPLE_COUNT_1_BIT;
+	attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	attachments[2].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentReference sub_pass_0_depth_stancil_attachment{};
 	sub_pass_0_depth_stancil_attachment.attachment = 0;
@@ -356,11 +365,16 @@ void Window::_InitRenderPass()
 	sub_pass_0_color_attachment[0].attachment = 1;
 	sub_pass_0_color_attachment[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+	VkAttachmentReference sub_pass_0_reolve_attachment{};
+	sub_pass_0_reolve_attachment.attachment = 2;
+	sub_pass_0_reolve_attachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 	std::array< VkSubpassDescription, 1> sub_passes{};
 	sub_passes[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	sub_passes[0].colorAttachmentCount = sub_pass_0_color_attachment.size();
 	sub_passes[0].pColorAttachments = sub_pass_0_color_attachment.data();
 	sub_passes[0].pDepthStencilAttachment = &sub_pass_0_depth_stancil_attachment;
+	sub_passes[0].pResolveAttachments = &sub_pass_0_reolve_attachment;
 
 	VkSubpassDependency dependency{};
 	dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
@@ -390,9 +404,11 @@ void Window::_InitFramebuffers()
 {
 	_framebuffer.resize(_swapchain_image_count);
 	for(uint32_t i = 0; i < _swapchain_image_count; ++i){
-		std::array<VkImageView, 2> attachments{};
+		std::array<VkImageView, 3> attachments{};
 		attachments[0] = _depth_stencil_image_view;
-		attachments[1] = _swapchain_images_views[i];
+		attachments[1] = colorImageView;
+		attachments[2] = _swapchain_images_views[i];
+	
 
 		VkFramebufferCreateInfo _framebuffer_create_info{};
 		_framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -504,9 +520,9 @@ void Window::_CreateGraphicsPipeline()
 
 	VkPipelineMultisampleStateCreateInfo multisampling{};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multisampling.sampleShadingEnable = VK_FALSE;
-	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-	multisampling.minSampleShading = 1.0f; // Optional
+	multisampling.sampleShadingEnable = VK_TRUE; // enable sample shading in the pipeline
+	multisampling.rasterizationSamples = _renderer->GetVulkanMsaa();
+	multisampling.minSampleShading = .2f; // min fraction for sample shading; closer to one is smooth
 	multisampling.pSampleMask = nullptr; // Optional
 	multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
 	multisampling.alphaToOneEnable = VK_FALSE; // Optional
