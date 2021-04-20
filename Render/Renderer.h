@@ -29,7 +29,7 @@ public:
 	const VkPhysicalDeviceProperties       &  GetVulkanPhysicalDeviceProperties() const;
 	const VkPhysicalDeviceMemoryProperties &  GetVulkanPhysicalDeviceMemoryProperties() const;
 	const VkDebugReportCallbackEXT            GetVulkanDebugReportCallback() const;
-	const VkSampleCountFlagBits               GetVulkanMass() const;
+	const VkSampleCountFlagBits               GetVulkanMsaa() const;
 
 private:
 	void _SetupLayersAndExtentions();

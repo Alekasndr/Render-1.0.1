@@ -76,7 +76,7 @@ const VkDebugReportCallbackEXT Renderer::GetVulkanDebugReportCallback() const
 	return _debug_report;
 }
 
-const VkSampleCountFlagBits Renderer::GetVulkanMass() const
+const VkSampleCountFlagBits Renderer::GetVulkanMsaa() const
 {
 	return msaaSamples;
 }

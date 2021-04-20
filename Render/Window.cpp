@@ -33,6 +33,7 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	createDescriptorSetLayout();
 	_CreateGraphicsPipeline();
 	_CreateCommandPool();
+	createColorResources();
 	_InitDepthStencilImage();
 	_InitFramebuffers();
 	createTextureImage();
@@ -61,6 +62,7 @@ Window::~Window()
 	destroyTextureSampler();
 	destroyTextureImageView();
 	destroyTextureImage();
+	destroyColorResources();
 	_DeInitDepthStencilImage();
 	_DestroyCommandPool();
 	_DeInitFramebuffers();
@@ -309,7 +311,7 @@ void Window::_InitDepthStencilImage()
 	
 	_depth_stencil_format = findDepthFormat();
 
-	createImage(_surface_size_x, _surface_size_y, 1, _depth_stencil_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _depth_stencil_image, _depth_stencil_image_memory);
+	createImage(_surface_size_x, _surface_size_y, 1,_renderer->GetVulkanMsaa() , _depth_stencil_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _depth_stencil_image, _depth_stencil_image_memory);
 	_depth_stencil_image_view = createImageView(_depth_stencil_image, _depth_stencil_format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
 	transitionImageLayout(_depth_stencil_image, _depth_stencil_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
@@ -766,6 +768,7 @@ void Window::recreateSwapChain()
 	_InitSwapchainImages();
 	_InitRenderPass();
 	_CreateGraphicsPipeline();
+	createColorResources();
 	_InitDepthStencilImage();
 	_InitFramebuffers();
 	createUniformBuffers();
@@ -776,6 +779,7 @@ void Window::recreateSwapChain()
 
 void Window::cleanupSwapChain()
 {
+	destroyColorResources();
 	_DeInitDepthStencilImage();
 	_DeInitFramebuffers();
 	_DestroyCommandBuffers();
@@ -1044,9 +1048,9 @@ void Window::createTextureImage()
 
 	stbi_image_free(pixels);
 
-	createImage(texWidth, texHeight, mipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, 
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+	createImage(texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, 
+		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | 
+		VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
 
 	transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);;
@@ -1245,6 +1249,22 @@ void Window::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWid
 	endSingleTimeCommands(commandBuffer);
 }
 
+void Window::createColorResources()
+{
+	VkFormat colorFormat = _surface_format.format;
+
+	createImage(_surface_size_x, _surface_size_y, 1, _renderer->GetVulkanMsaa(), colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
+	colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+}
+
+void Window::destroyColorResources()
+{
+	auto device = _renderer->GetVulkanDevice();
+	vkDestroyImageView(device, colorImageView, nullptr);
+	vkDestroyImage(device, colorImage, nullptr);
+	vkFreeMemory(device, colorImageMemory, nullptr);
+}
+
 uint32_t Window::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
@@ -1299,7 +1319,7 @@ void Window::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize siz
 	endSingleTimeCommands(commandBuffer);
 }
 
-void Window::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+void Window::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 {
 	auto device = _renderer->GetVulkanDevice();
 	VkImageCreateInfo imageInfo{};
@@ -1314,7 +1334,7 @@ void Window::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, Vk
 	imageInfo.tiling = tiling;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	imageInfo.usage = usage;
-	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.samples = numSamples;
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
