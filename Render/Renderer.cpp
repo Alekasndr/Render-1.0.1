@@ -76,7 +76,7 @@ const VkDebugReportCallbackEXT Renderer::GetVulkanDebugReportCallback() const
 	return _debug_report;
 }
 
-const VkSampleCountFlagBits Renderer::GetVulkanMass() const
+const VkSampleCountFlagBits Renderer::GetVulkanMsaa() const
 {
 	return msaaSamples;
 }
@@ -152,6 +152,7 @@ void Renderer::_InitDevice()
 		vkGetPhysicalDeviceMemoryProperties(_gpu, &_gpu_memory_propertie);
 		vkGetPhysicalDeviceFeatures(_gpu, &supported_physical_device_feature);
 		supported_physical_device_feature.samplerAnisotropy = VK_TRUE;
+		supported_physical_device_feature.sampleRateShading = VK_TRUE;
 	}
 	{
 		uint32_t family_count = 0;
