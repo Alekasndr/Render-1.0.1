@@ -3,10 +3,11 @@
 #include"Platform.h"
 #include"VertexStruct.h"
 #include"UniformBufferObject.h"
-#include<iostream>
-#include<vector>
+#include"Window.h"
+#include"Renderer.h"
+#include"Shared.h"
+#include"allincludes.h"
 
-using namespace std;
 
 class Renderer;
 

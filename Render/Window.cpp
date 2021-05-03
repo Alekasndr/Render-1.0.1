@@ -1,13 +1,8 @@
-#include "Window.h"
-#include"Renderer.h"
-#include"Shared.h"
-#include<assert.h>
-#include<array>
-#include<fstream>
-#include <unordered_map>
+#include"Window.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -17,8 +12,6 @@
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-
-#include <chrono>
 
 Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name)
 {

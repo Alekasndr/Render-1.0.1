@@ -1,9 +1,13 @@
 #pragma once
 
+#include"allincludes.h"
+
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
-#include<vulkan/vulkan.h>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 struct UniformBufferObject {
     alignas(16) glm::mat4 model;
