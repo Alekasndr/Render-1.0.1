@@ -1,12 +1,13 @@
 #pragma once
 #include"Renderer.h"
 #include"Window.h"
-#include"allincludes.h"
+#include"GltfLoader.h"
 
 int main()
 {
 	Renderer r;
 
+	GltfLoader gltf;
 
 	auto w = r.OpenWindow(800, 600, "test");
 
