@@ -7,7 +7,7 @@ int main()
 {
 	Renderer r;
 
-	GltfLoader gltf;
+	GltfLoader * gltf = new GltfLoader(&r);
 
 	auto w = r.OpenWindow(800, 600, "test");
 
