@@ -17,9 +17,9 @@ Renderer::~Renderer()
 	_DeInitInstance();
 }
 
-Window* Renderer::OpenWindow(uint32_t size_x, uint32_t size_y, std::string name)
+Window* Renderer::OpenWindow(uint32_t size_x, uint32_t size_y, std::string name, GltfLoader* gltf)
 {
-	_window = new Window(this, size_x, size_y, name);
+	_window = new Window(this, size_x, size_y, name, gltf);
 	return _window;
 }
 

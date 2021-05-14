@@ -3,18 +3,18 @@
 #include"Platform.h"
 #include"VertexStruct.h"
 #include"UniformBufferObject.h"
-#include"Window.h"
-#include"Renderer.h"
 #include"Shared.h"
 #include"allincludes.h"
-
+#include"Renderer.h"
+#include"GltfLoader.h"
 
 class Renderer;
+class GltfLoader;
 
 class Window
 {
 public:
-	Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name);
+	Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name, GltfLoader * gltfloader);
 	~Window();
 
 	void Close();
@@ -98,6 +98,7 @@ private:
 	void destroyTextureSampler();
 
 	void loadModel();
+	void gltfLoad();
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
 	void createColorResources();
@@ -116,7 +117,10 @@ private:
 	VkFormat findDepthFormat();
 	bool hasStencilComponent(VkFormat format);
 
-	Renderer   * _renderer = nullptr;
+	Renderer* _renderer = nullptr;
+
+	GltfLoader* _gltfloader = nullptr;
+
 
 	VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
 

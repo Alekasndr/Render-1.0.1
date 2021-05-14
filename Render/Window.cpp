@@ -12,9 +12,11 @@
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name)
+Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name, GltfLoader* gltfloader)
 {
 	_renderer       = renderer;
+	_gltfloader     = gltfloader;
+	
 	_surface_size_x = size_x;
 	_surface_size_y = size_y;
 	_window_name    = name;
@@ -33,7 +35,8 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	createTextureImage();
 	createTextureImageView();
 	createTextureSampler();
-	loadModel();
+	//loadModel();
+	gltfLoad();
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffers();
@@ -1169,6 +1172,12 @@ void Window::loadModel()
 			indices.push_back(uniqueVertices[vertex]);
 		}
 	}
+}
+
+void Window::gltfLoad()
+{
+	vertices = _gltfloader->GetVertexBuffer();
+	indices = _gltfloader->GetIndexBuffer();
 }
 
 

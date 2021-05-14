@@ -10,10 +10,11 @@
 
 using namespace tinygltf;
 
+
 GltfLoader::GltfLoader(Renderer* renderer)
 {
-    _renderer = renderer;
-    modelLoader();
+	_renderer = renderer;
+	modelLoader();
 }
 
 GltfLoader::~GltfLoader()
@@ -23,32 +24,41 @@ GltfLoader::~GltfLoader()
 void GltfLoader::modelLoader()
 {
 	void loadNode(const tinygltf::Node & inputNode, const tinygltf::Model & input, GltfLoader::Node * parent, std::vector<uint32_t>&indexBuffer, std::vector<Vertex>&vertexBuffer, std::vector<GltfLoader::Node> nodes);
-    std::string filename = "../models/Duck/glTF/Duck.gltf";
+	std::string filename = "../models/Duck/glTF/Duck.gltf";
 
-    tinygltf::Model glTFInput;
-    tinygltf::TinyGLTF gltfContext;
-    std::string error, warning;
+	tinygltf::Model glTFInput;
+	tinygltf::TinyGLTF gltfContext;
+	std::string error, warning;
 
-    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, filename);
+	bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, filename);
 
-    // Pass some Vulkan resources required for setup and rendering to the glTF model loading class
-    VkDevice device = _renderer->GetVulkanDevice();
-    VkQueue queue = _renderer->GetVulkanQueue();
+	// Pass some Vulkan resources required for setup and rendering to the glTF model loading class
+	VkDevice device = _renderer->GetVulkanDevice();
+	VkQueue queue = _renderer->GetVulkanQueue();
 
-    std::vector<uint32_t> indexBuffer;
-    std::vector<Vertex> vertexBuffer;
-
-    if (fileLoaded) {
-       // glTFModel.loadImages(glTFInput);
-      //  glTFModel.loadMaterials(glTFInput);
-      //  glTFModel.loadTextures(glTFInput);
-        const tinygltf::Scene& scene = glTFInput.scenes[0];
-        for (size_t i = 0; i < scene.nodes.size(); i++) {
-            const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
-            loadNode(node, glTFInput, nullptr, indexBuffer, vertexBuffer, nodess);
-        }
-    }
+	if (fileLoaded) {
+		// glTFModel.loadImages(glTFInput);
+	   //  glTFModel.loadMaterials(glTFInput);
+	   //  glTFModel.loadTextures(glTFInput);
+		const tinygltf::Scene& scene = glTFInput.scenes[0];
+		for (size_t i = 0; i < scene.nodes.size(); i++) {
+			const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
+			loadNode(node, glTFInput, nullptr, indexBuffer, vertexBuffer, nodess);
+		}
+	}
 }
+
+std::vector<uint32_t> GltfLoader::GetIndexBuffer()
+{
+	return indexBuffer;
+	;
+}
+
+std::vector<Vertex> GltfLoader::GetVertexBuffer()
+{
+	return vertexBuffer;
+}
+
 void loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, GltfLoader::Node* parent, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer, std::vector<GltfLoader::Node> nodes)
 {
 	GltfLoader::Node node{};

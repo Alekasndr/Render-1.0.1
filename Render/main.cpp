@@ -9,7 +9,7 @@ int main()
 
 	GltfLoader * gltf = new GltfLoader(&r);
 
-	auto w = r.OpenWindow(800, 600, "test");
+	auto w = r.OpenWindow(800, 600, "test", gltf);
 
 	float color_rotator = 0.0f;
 	auto timer = std::chrono::steady_clock();

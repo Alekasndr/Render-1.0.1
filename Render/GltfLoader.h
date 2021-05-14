@@ -1,6 +1,9 @@
 #pragma once
 #include"allincludes.h"
 #include"Renderer.h"
+
+class Renderer;
+
 class GltfLoader
 {
 public:
@@ -8,6 +11,9 @@ public:
 	~GltfLoader();
 
 	void modelLoader();
+	std::vector<uint32_t> GetIndexBuffer();
+	std::vector<Vertex> GetVertexBuffer();
+
 
 	// A primitive contains the data for a single draw call
 	struct Primitive {
@@ -37,7 +43,8 @@ public:
 	std::vector<GltfLoader::Material> materials;
 	std::vector<GltfLoader::Node> nodess;
 private:
-
 	Renderer* _renderer = nullptr;
-};
 
+	std::vector<uint32_t> indexBuffer;
+	std::vector<Vertex> vertexBuffer;
+};
