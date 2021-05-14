@@ -1,14 +1,14 @@
+#pragma once
 #include"Renderer.h"
 #include"Window.h"
-#include<array>
-#include<chrono>
-#include<iostream>
-using namespace std;
+#include"GltfLoader.h"
 
 int main()
 {
 	Renderer r;
-	
+
+	GltfLoader gltf;
+
 	auto w = r.OpenWindow(800, 600, "test");
 
 	float color_rotator = 0.0f;

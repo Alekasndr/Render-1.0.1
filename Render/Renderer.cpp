@@ -1,9 +1,4 @@
-#include"BUILD_OPTIONS.h"
-#include"Platform.h"
-
 #include "Renderer.h"
-#include"Shared.h"
-#include "Window.h"
 
 Renderer::Renderer()
 {

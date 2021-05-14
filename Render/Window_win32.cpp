@@ -1,8 +1,6 @@
-#include <string>
-#include "BUILD_OPTIONS.h"
-#include "Platform.h"
+#include"BUILD_OPTIONS.h"
 #include"Window.h"
-#include "Renderer.h"
+
 
 #include <assert.h>
 

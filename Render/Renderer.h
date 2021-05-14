@@ -1,13 +1,10 @@
 #pragma once
-#include<vulkan/vulkan.h>
-#include<vector>
-#include<iostream>
-#include<sstream>
-#include <cstdlib>
-#include <assert.h>
 
-#include"Platform.h"
+#include"allincludes.h"
 #include"Window.h"
+#include"Platform.h"
+#include"BUILD_OPTIONS.h"
+#include"Shared.h"
 
 class Window;
 

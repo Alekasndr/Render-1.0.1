@@ -1,23 +1,17 @@
-#include "Window.h"
-#include"Renderer.h"
-#include"Shared.h"
-#include<assert.h>
-#include<array>
-#include<fstream>
-#include <unordered_map>
+#include"Window.h"
 
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
+
 #include <stb_image.h>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-
-#include <chrono>
-
 Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name)
 {
 	_renderer       = renderer;
@@ -1021,7 +1015,7 @@ void Window::updateUniformBuffer(uint32_t currentImage)
 
 	UniformBufferObject ubo{};
 	ubo.model = glm::rotate(glm::mat4(1.0f), 
-		time * glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		time * glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), 
 		glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -1147,9 +1141,9 @@ void Window::loadModel()
 	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
 	for (const auto& shape : shapes) {
+	
 		for (const auto& index : shape.mesh.indices) {
 			Vertex vertex{};
-
 			vertex.pos = {
 				attrib.vertices[3 * index.vertex_index + 0],
 				attrib.vertices[3 * index.vertex_index + 1],
@@ -1158,16 +1152,15 @@ void Window::loadModel()
 
 			vertex.texCoord = {
 				attrib.texcoords[2 * index.texcoord_index + 0],
-				attrib.texcoords[2 * index.texcoord_index + 1]
-			};
-
-			vertex.texCoord = {
-				attrib.texcoords[2 * index.texcoord_index + 0],
 				1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
 			};
 
-			vertex.color = { 1.0f, 1.0f, 1.0f };
-
+			vertex.normal = {
+			attrib.normals[3 * index.normal_index + 0],
+			attrib.normals[3 * index.normal_index + 1],
+			attrib.normals[3 * index.normal_index + 2]
+			};
+			
 			if (uniqueVertices.count(vertex) == 0) {
 				uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
 				vertices.push_back(vertex);
@@ -1177,6 +1170,7 @@ void Window::loadModel()
 		}
 	}
 }
+
 
 void Window::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
 {
