@@ -1,13 +1,10 @@
 #pragma once
-#include<vulkan/vulkan.h>
-#include<vector>
-#include<iostream>
-#include<sstream>
-#include <cstdlib>
-#include <assert.h>
 
-#include"Platform.h"
+#include"allincludes.h"
 #include"Window.h"
+#include"Platform.h"
+#include"BUILD_OPTIONS.h"
+#include"Shared.h"
 
 class Window;
 
@@ -28,6 +25,8 @@ public:
 	const uint32_t                            GetVulkanGraphicsQueueFamilyIndex() const;
 	const VkPhysicalDeviceProperties       &  GetVulkanPhysicalDeviceProperties() const;
 	const VkPhysicalDeviceMemoryProperties &  GetVulkanPhysicalDeviceMemoryProperties() const;
+	const VkDebugReportCallbackEXT            GetVulkanDebugReportCallback() const;
+	const VkSampleCountFlagBits               GetVulkanMsaa() const;
 
 private:
 	void _SetupLayersAndExtentions();
@@ -42,6 +41,9 @@ private:
 	void _InitDebug();
 	void _DeInitDebug();
 
+	VkSampleCountFlagBits getMaxUsableSampleCount();
+	bool isDeviceSuitable(VkPhysicalDevice device);
+
 	VkInstance                        _instance      = VK_NULL_HANDLE;
 	VkPhysicalDevice                  _gpu           = VK_NULL_HANDLE;
 	VkDevice                          _device        = VK_NULL_HANDLE;
@@ -49,6 +51,7 @@ private:
 	VkPhysicalDeviceProperties        _gpu_propertie = {};
 	VkPhysicalDeviceMemoryProperties  _gpu_memory_propertie = {};
 	VkPhysicalDeviceFeatures          supported_physical_device_feature = {};
+
 
 	uint32_t          _graphics_family_index = 0;
 
@@ -61,5 +64,7 @@ private:
 
 	VkDebugReportCallbackEXT  _debug_report = VK_NULL_HANDLE;
 	VkDebugReportCallbackCreateInfoEXT debug_callback_create_info = {};
+
+	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 };
 

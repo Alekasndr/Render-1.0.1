@@ -1,10 +1,13 @@
 #pragma once
 
 #include"Platform.h"
-#include<iostream>
-#include<vector>
+#include"VertexStruct.h"
+#include"UniformBufferObject.h"
+#include"Window.h"
+#include"Renderer.h"
+#include"Shared.h"
+#include"allincludes.h"
 
-using namespace std;
 
 class Renderer;
 
@@ -27,31 +30,31 @@ public:
 
 private:
 
-	void  _InitOSWindow();
-	void  _DeInitOSWindow();
-	void  _UpdateOSWindow();
-	void  _InitOSSurface();
+	void	_InitOSWindow();
+	void _DeInitOSWindow();
+	void _UpdateOSWindow();
+	void _InitOSSurface();
 
-	void  _InitSurface();
-	void  _DenitSurface();
+	void _InitSurface();
+	void _DenitSurface();
 
-	void  _InitSwapchain();
-	void  _DeinitSwapchain();
+	void _InitSwapchain();
+	void _DeinitSwapchain();
 
-	void  _InitSwapchainImages();
-	void  _DeInitSwapchainImages();
+	void _InitSwapchainImages();
+	void _DeInitSwapchainImages();
 
-	void  _InitDepthStencilImage();
-	void  _DeInitDepthStencilImage();
+	void _InitDepthStencilImage();
+	void _DeInitDepthStencilImage();
 
-	void  _InitRenderPass();
-	void  _DeInitRednderPass();
+	void _InitRenderPass();
+	void _DeInitRednderPass();
 
-	void  _InitFramebuffers();
-	void  _DeInitFramebuffers();
+	void _InitFramebuffers();
+	void _DeInitFramebuffers();
 	 
-	void  _CreateGraphicsPipeline();
-	void  _DestroyGraphicsPipeline();
+	void _CreateGraphicsPipeline();
+	void _DestroyGraphicsPipeline();
 	
 	void _CreateCommandPool();
 	void _DestroyCommandPool();
@@ -60,7 +63,58 @@ private:
 	void _DestroyCommandBuffers();
 
 	void createSyncObjects();
+	void destroySyncObjects();
+
 	void cleanup();
+	void recreateSwapChain();
+	void cleanupSwapChain();
+
+	void createVertexBuffer();
+	void destroyVertexBuffer();
+
+	void createIndexBuffer();
+	void destroyIndexBuffer();
+
+	void createDescriptorSetLayout();
+	void destroyDescriptorSetLayout();
+
+	void createUniformBuffers();
+	void destroyUniformBuffers();
+
+	void createDescriptorPool();
+	void destroyDescriptorPool();
+
+	void createDescriptorSets();
+
+	void updateUniformBuffer(uint32_t currentImage);
+
+	void createTextureImage();
+	void destroyTextureImage();
+
+	void createTextureImageView();
+	void destroyTextureImageView();
+
+	void createTextureSampler();
+	void destroyTextureSampler();
+
+	void loadModel();
+	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
+
+	void createColorResources();
+	void destroyColorResources();
+
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
+	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+	VkCommandBuffer beginSingleTimeCommands();
+	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	VkFormat findDepthFormat();
+	bool hasStencilComponent(VkFormat format);
 
 	Renderer   * _renderer = nullptr;
 
@@ -68,8 +122,8 @@ private:
 
 	VkSurfaceKHR   _surface = VK_NULL_HANDLE;
 
-	uint32_t _surface_size_x = 512;
-	uint32_t _surface_size_y = 512;
+	uint32_t _surface_size_x = 800;
+	uint32_t _surface_size_y = 600;
 	std::string _window_name;
 	uint32_t   _swapchain_image_count = 2;
 	uint32_t _active_swapchain_image_id = UINT32_MAX;
@@ -100,19 +154,52 @@ private:
 
 	VkCommandPool _commandPool = VK_NULL_HANDLE;
 
-	//VkSemaphore _imageAvailableSemaphore = VK_NULL_HANDLE;
-	//VkSemaphore _renderFinishedSemaphore = VK_NULL_HANDLE;
-
 	bool _window_should_run = true;
 
 	const int MAX_FRAMES_IN_FLIGHT = 2;
 
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
+
 	std::vector<VkFence> inFlightFences;
 	std::vector<VkFence> imagesInFlight;
 	size_t currentFrame = 0;
 
+	bool framebufferResized = false;
+
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
+	VkBuffer vertexBuffer = VK_NULL_HANDLE;
+	VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
+	
+	VkBuffer indexBuffer = VK_NULL_HANDLE;
+	VkDeviceMemory indexBufferMemory = VK_NULL_HANDLE;
+
+	std::vector<VkBuffer> uniformBuffers;
+	std::vector<VkDeviceMemory> uniformBuffersMemory;
+
+	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+
+	VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+	std::vector<VkDescriptorSet> descriptorSets;
+
+	uint32_t mipLevels;
+	VkImage textureImage = VK_NULL_HANDLE;
+	VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;
+
+	VkImageView textureImageView = VK_NULL_HANDLE;
+	VkSampler textureSampler = VK_NULL_HANDLE;
+
+	VkImage colorImage = VK_NULL_HANDLE;
+	VkDeviceMemory colorImageMemory = VK_NULL_HANDLE;
+	VkImageView colorImageView = VK_NULL_HANDLE;
+
+	const uint32_t WIDTH = 800;
+	const uint32_t HEIGHT = 600;
+
+	const std::string MODEL_PATH = "../models/viking_room.obj";
+	const std::string TEXTURE_PATH = "../textures/viking_room.png";
 
 #if VK_USE_PLATFORM_WIN32_KHR
 	HINSTANCE         _win32_instance = NULL;
