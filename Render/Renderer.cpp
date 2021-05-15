@@ -17,9 +17,9 @@ Renderer::~Renderer()
 	_DeInitInstance();
 }
 
-Window* Renderer::OpenWindow(uint32_t size_x, uint32_t size_y, std::string name, GltfLoader* gltf)
+Window* Renderer::OpenWindow(uint32_t size_x, uint32_t size_y, std::string name)
 {
-	_window = new Window(this, size_x, size_y, name, gltf);
+	_window = new Window(this, size_x, size_y, name);
 	return _window;
 }
 
@@ -78,7 +78,7 @@ const VkSampleCountFlagBits Renderer::GetVulkanMsaa() const
 
 
 void Renderer::_SetupLayersAndExtentions() {
-//	_instance_extentions.push_back(VK_KHR_DISPLAY_EXTENSION_NAME);
+	//	_instance_extentions.push_back(VK_KHR_DISPLAY_EXTENSION_NAME);
 	_instance_extentions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 	_instance_extentions.push_back(PLATFORM_SURFACE_EXTENSION_NAME);
 	_device_extentions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -101,22 +101,22 @@ void Renderer::_SetupLayersAndExtentions() {
 void Renderer::_InitInstance()
 {
 	VkApplicationInfo application_info{};
-	application_info.sType                    = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	application_info.apiVersion			      = VK_MAKE_VERSION(1, 2, 154);
-	application_info.applicationVersion       = VK_MAKE_VERSION(1, 1, 2);
-	application_info.pApplicationName         = "Vulkan Renderer 1.0.2";
+	application_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	application_info.apiVersion = VK_MAKE_VERSION(1, 2, 154);
+	application_info.applicationVersion = VK_MAKE_VERSION(1, 1, 2);
+	application_info.pApplicationName = "Vulkan Renderer 1.0.2";
 	application_info.pNext = NULL;
 
 	VkInstanceCreateInfo instance_create_info{};
-	instance_create_info.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instance_create_info.pApplicationInfo        = &application_info;
-	instance_create_info.enabledLayerCount       = _instance_layers.size();
-	instance_create_info.ppEnabledLayerNames     = _instance_layers.data();
-	instance_create_info.enabledExtensionCount   = _instance_extentions.size();
+	instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	instance_create_info.pApplicationInfo = &application_info;
+	instance_create_info.enabledLayerCount = _instance_layers.size();
+	instance_create_info.ppEnabledLayerNames = _instance_layers.data();
+	instance_create_info.enabledExtensionCount = _instance_extentions.size();
 	instance_create_info.ppEnabledExtensionNames = _instance_extentions.data();
-	instance_create_info.pNext                   = NULL;
+	instance_create_info.pNext = NULL;
 
-	ErrorCheck (vkCreateInstance( &instance_create_info, nullptr, &_instance));
+	ErrorCheck(vkCreateInstance(&instance_create_info, nullptr, &_instance));
 	std::cout << "Vulkan: Instance sucessfully created" << std::endl;
 }
 
@@ -148,73 +148,74 @@ void Renderer::_InitDevice()
 		vkGetPhysicalDeviceFeatures(_gpu, &supported_physical_device_feature);
 		supported_physical_device_feature.samplerAnisotropy = VK_TRUE;
 		supported_physical_device_feature.sampleRateShading = VK_TRUE;
-	}
-	{
-		uint32_t family_count = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &family_count, nullptr);
-		std::vector < VkQueueFamilyProperties> familu_property_list(family_count);
-		vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &family_count, familu_property_list.data());
-	
-		
+		supported_physical_device_feature.fillModeNonSolid = VK_TRUE; /// изменить на норм
+		{
+			uint32_t family_count = 0;
+			vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &family_count, nullptr);
+			std::vector < VkQueueFamilyProperties> familu_property_list(family_count);
+			vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &family_count, familu_property_list.data());
 
-		bool found = false;
-		for (uint32_t i = 0; i < family_count; ++i) {
-			if (familu_property_list[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-				found = true;
-				_graphics_family_index = i;
+
+
+			bool found = false;
+			for (uint32_t i = 0; i < family_count; ++i) {
+				if (familu_property_list[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+					found = true;
+					_graphics_family_index = i;
+				}
 			}
-		}
-		if (!found) {
-			std::cout << "Vulkan ERROR: Queue family supporting graphics not found." << std::endl;
-			assert(0 && "Vulkan ERROR: Queue family supporting graphics not found.");
-			std::exit(-1);
+			if (!found) {
+				std::cout << "Vulkan ERROR: Queue family supporting graphics not found." << std::endl;
+				assert(0 && "Vulkan ERROR: Queue family supporting graphics not found.");
+				std::exit(-1);
+			}
+
 		}
 
+		/*
+		{
+			uint32_t layer_count = 0;
+			vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+			std::vector<VkLayerProperties> layer_properties_list(layer_count);
+			vkEnumerateInstanceLayerProperties(&layer_count, layer_properties_list.data());
+			std::cout << "Instance Layers: \n";
+			for (auto &i : layer_properties_list) {
+				std::cout << "  " << i.layerName << "\t\t |" << i.description << std::endl;
+			}
+			std::cout << std::endl;
+		}
+		*/
+
+		float queue_priorities[]{ 1.0f };
+		VkDeviceQueueCreateInfo device_queue_create_info{};
+		device_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		device_queue_create_info.pNext = VK_NULL_HANDLE;
+		device_queue_create_info.queueFamilyIndex = _graphics_family_index;
+		device_queue_create_info.queueCount = 1;
+		device_queue_create_info.pQueuePriorities = queue_priorities;
+		device_queue_create_info.pNext = NULL;
+
+		VkDeviceCreateInfo device_create_info{};
+		device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		device_queue_create_info.pNext = VK_NULL_HANDLE;
+		device_create_info.queueCreateInfoCount = 1;
+		device_create_info.pQueueCreateInfos = &device_queue_create_info;
+		device_create_info.enabledExtensionCount = _device_extentions.size();
+		device_create_info.ppEnabledExtensionNames = _device_extentions.data();
+		device_create_info.pEnabledFeatures = &supported_physical_device_feature;
+		device_create_info.pNext = NULL;
+
+
+
+		ErrorCheck(vkCreateDevice(_gpu, &device_create_info, nullptr, &_device));
+
+		vkGetDeviceQueue(_device, _graphics_family_index, 0, &_queue);
+		//	vkGetDeviceQueue(_device, _graphics_family_index, 1, &_queue);
+
+		std::cout << "Vulkan: Device successfully initialized "
+			<< std::endl;
 	}
-
-	/*
-	{
-		uint32_t layer_count = 0;
-		vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
-		std::vector<VkLayerProperties> layer_properties_list(layer_count);
-		vkEnumerateInstanceLayerProperties(&layer_count, layer_properties_list.data());
-		std::cout << "Instance Layers: \n";
-		for (auto &i : layer_properties_list) {
-			std::cout << "  " << i.layerName << "\t\t |" << i.description << std::endl;
-		}
-		std::cout << std::endl;
-	}
-	*/
-
-	float queue_priorities[]{ 1.0f };
-	VkDeviceQueueCreateInfo device_queue_create_info{};
-	device_queue_create_info.sType                 = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	device_queue_create_info.pNext = VK_NULL_HANDLE;
-	device_queue_create_info.queueFamilyIndex      = _graphics_family_index;
-	device_queue_create_info.queueCount            = 1;
-	device_queue_create_info.pQueuePriorities      = queue_priorities;
-	device_queue_create_info.pNext = NULL;
-
-	VkDeviceCreateInfo device_create_info{}; 
-	device_create_info.sType                        = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	device_queue_create_info.pNext = VK_NULL_HANDLE;
-	device_create_info.queueCreateInfoCount         = 1;
-	device_create_info.pQueueCreateInfos            = &device_queue_create_info;
-	device_create_info.enabledExtensionCount = _device_extentions.size();
-	device_create_info.ppEnabledExtensionNames = _device_extentions.data();
-	device_create_info.pEnabledFeatures = &supported_physical_device_feature;
-	device_create_info.pNext = NULL;
-
-	
-
-	ErrorCheck(vkCreateDevice(_gpu ,&device_create_info, nullptr, &_device));
-	
-	vkGetDeviceQueue(_device, _graphics_family_index, 0, &_queue);
-//	vkGetDeviceQueue(_device, _graphics_family_index, 1, &_queue);
-	
-	std::cout << "Vulkan: Device successfully initialized "
-		<< std::endl;
-} 
+}
 
 void Renderer::_DeInitDevice()
 {
@@ -236,7 +237,7 @@ VulkanDebugCallback(
 	const char* msg,
 	void* user_data)
 {
-	std::cout <<  flags << std::endl;
+	std::cout << flags << std::endl;
 	std::ostringstream stream;
 	stream << "VKDBG:";
 	if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT) {
@@ -257,7 +258,7 @@ VulkanDebugCallback(
 
 	stream << "@[" << layer_prefix << "]:";
 	stream << msg << std::endl;
-	
+
 	std::cout << stream.str();
 
 #ifdef _WIN32
@@ -281,11 +282,11 @@ void Renderer::_SetupDebug()
 	debug_callback_create_info.pNext = NULL;
 	debug_callback_create_info.pfnCallback = VulkanDebugCallback;
 	debug_callback_create_info.flags =
-//		VK_DEBUG_REPORT_INFORMATION_BIT_EXT |
+		//		VK_DEBUG_REPORT_INFORMATION_BIT_EXT |
 		VK_DEBUG_REPORT_WARNING_BIT_EXT |
 		VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
 		VK_DEBUG_REPORT_ERROR_BIT_EXT |
-//		VK_DEBUG_REPORT_DEBUG_BIT_EXT |
+		//		VK_DEBUG_REPORT_DEBUG_BIT_EXT |
 		0;
 
 
@@ -294,8 +295,8 @@ void Renderer::_SetupDebug()
 	_instance_extentions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 }
 
-PFN_vkCreateDebugReportCallbackEXT   fvkCreateDebugReportCallbackEXT    = nullptr;
-PFN_vkDestroyDebugReportCallbackEXT   fvkDestroyDebugReportCallbackEXT  = nullptr;
+PFN_vkCreateDebugReportCallbackEXT   fvkCreateDebugReportCallbackEXT = nullptr;
+PFN_vkDestroyDebugReportCallbackEXT   fvkDestroyDebugReportCallbackEXT = nullptr;
 
 
 void Renderer::_InitDebug()
@@ -311,10 +312,10 @@ void Renderer::_InitDebug()
 	std::cout << "Vulkan: Fetch debug function pointers initialized "
 		<< std::endl;
 
-	
 
 
-	fvkCreateDebugReportCallbackEXT(_instance, &debug_callback_create_info,nullptr, &_debug_report);
+
+	fvkCreateDebugReportCallbackEXT(_instance, &debug_callback_create_info, nullptr, &_debug_report);
 }
 
 void Renderer::_DeInitDebug()
@@ -326,18 +327,18 @@ void Renderer::_DeInitDebug()
 
 VkSampleCountFlagBits Renderer::getMaxUsableSampleCount()
 {
-		VkPhysicalDeviceProperties physicalDeviceProperties;
-		vkGetPhysicalDeviceProperties(_gpu, &physicalDeviceProperties);
+	VkPhysicalDeviceProperties physicalDeviceProperties;
+	vkGetPhysicalDeviceProperties(_gpu, &physicalDeviceProperties);
 
-		VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
-		if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
-		if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
-		if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
-		if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
-		if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
-		if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
+	VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+	if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
+	if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
+	if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
+	if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
+	if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
+	if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
 
-		return VK_SAMPLE_COUNT_1_BIT;
+	return VK_SAMPLE_COUNT_1_BIT;
 }
 
 bool Renderer::isDeviceSuitable(VkPhysicalDevice device)

@@ -6,15 +6,19 @@
 #include"Shared.h"
 #include"allincludes.h"
 #include"Renderer.h"
-#include"GltfLoader.h"
+
 
 class Renderer;
-class GltfLoader;
+
+namespace tinygltf {
+	class Node;
+	class Model;
+}
 
 class Window
 {
 public:
-	Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name, GltfLoader * gltfloader);
+	Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name);
 	~Window();
 
 	void Close();
@@ -30,7 +34,7 @@ public:
 
 private:
 
-	void	_InitOSWindow();
+	void _InitOSWindow();
 	void _DeInitOSWindow();
 	void _UpdateOSWindow();
 	void _InitOSSurface();
@@ -97,8 +101,6 @@ private:
 	void createTextureSampler();
 	void destroyTextureSampler();
 
-	void loadModel();
-	void gltfLoad();
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
 	void createColorResources();
@@ -116,11 +118,8 @@ private:
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	VkFormat findDepthFormat();
 	bool hasStencilComponent(VkFormat format);
-
+	
 	Renderer* _renderer = nullptr;
-
-	GltfLoader* _gltfloader = nullptr;
-
 
 	VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
 
@@ -204,6 +203,47 @@ private:
 
 	const std::string MODEL_PATH = "../models/viking_room.obj";
 	const std::string TEXTURE_PATH = "../textures/viking_room.png";
+
+	struct Primitive {
+		uint32_t firstIndex;
+		uint32_t indexCount;
+		int32_t materialIndex;
+	};
+
+	struct Mesh {
+		std::vector<Primitive> primitives;
+	};
+
+	struct Node {
+		Node* parent;
+		std::vector<Node> children;
+		Mesh mesh;
+		glm::mat4 matrix;
+	};
+
+	struct Material {
+		glm::vec4 baseColorFactor = glm::vec4(1.0f);
+		uint32_t baseColorTextureIndex;
+	};
+
+	struct Texture {
+		int32_t imageIndex;
+	};
+
+	std::vector<Window::Material> materials;
+	std::vector<Window::Node> nodess;
+	//std::vector<Renderer::Image> images;
+	std::vector<Window::Texture> textures;
+
+	
+	void modelLoader();
+	void loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, Window::Node* parent, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer);
+	void loadTextures(tinygltf::Model& input);
+	void loadMaterials(tinygltf::Model& input);
+	void loadImages(tinygltf::Model& input);
+
+//	std::vector<uint32_t> loadFileIndexBuffer;
+//	std::vector<Vertex> loadFileVertexBuffer;
 
 #if VK_USE_PLATFORM_WIN32_KHR
 	HINSTANCE         _win32_instance = NULL;

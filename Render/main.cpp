@@ -1,15 +1,14 @@
 #pragma once
 #include"Renderer.h"
 #include"Window.h"
-#include"GltfLoader.h"
+
 
 int main()
 {
 	Renderer r;
 
-	GltfLoader * gltf = new GltfLoader(&r);
 
-	auto w = r.OpenWindow(800, 600, "test", gltf);
+	auto w = r.OpenWindow(800, 600, "test");
 
 	float color_rotator = 0.0f;
 	auto timer = std::chrono::steady_clock();

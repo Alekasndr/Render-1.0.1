@@ -7,20 +7,24 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
 #include <stb_image.h>
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
-Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name, GltfLoader* gltfloader)
+// Define these only in *one* .cc file.
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+// #define TINYGLTF_NOEXCEPTION // optional. disable exception handling.
+#include "tiny_gltf.h"
+
+Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::string name)
 {
 	_renderer       = renderer;
-	_gltfloader     = gltfloader;
 	
 	_surface_size_x = size_x;
 	_surface_size_y = size_y;
 	_window_name    = name;
 
+	modelLoader();
 	_InitOSWindow();
 	_InitSurface();
 	_InitSwapchain();
@@ -35,8 +39,6 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	createTextureImage();
 	createTextureImageView();
 	createTextureSampler();
-	//loadModel();
-	gltfLoad();
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffers();
@@ -506,7 +508,7 @@ void Window::_CreateGraphicsPipeline()
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer.depthClampEnable = VK_FALSE;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
-	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizer.polygonMode = VK_POLYGON_MODE_LINE; // VK_POLYGON_MODE_FILL
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -673,7 +675,7 @@ void Window::_CreateCommandBuffers()
 
 		std::array<VkClearValue, 2> clearValues{};
 		clearValues[0].depthStencil = { 1.0f, 0 };
-		clearValues[1].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValues[1].color = { 1.0f, 1.0f, 1.0f, 1.0f }; // cмена цвета фона
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		renderPassInfo.pClearValues = clearValues.data();
@@ -1130,57 +1132,6 @@ void Window::destroyTextureSampler()
 	vkDestroySampler(device, textureSampler, nullptr);
 }
 
-void Window::loadModel()
-{
-	tinyobj::attrib_t attrib;
-	std::vector<tinyobj::shape_t> shapes;
-	std::vector<tinyobj::material_t> materials;
-	std::string warn, err;
-
-	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
-		throw std::runtime_error(warn + err);
-	}
-
-	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-	for (const auto& shape : shapes) {
-	
-		for (const auto& index : shape.mesh.indices) {
-			Vertex vertex{};
-			vertex.pos = {
-				attrib.vertices[3 * index.vertex_index + 0],
-				attrib.vertices[3 * index.vertex_index + 1],
-				attrib.vertices[3 * index.vertex_index + 2]
-			};
-
-			vertex.texCoord = {
-				attrib.texcoords[2 * index.texcoord_index + 0],
-				1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-			};
-
-			vertex.normal = {
-			attrib.normals[3 * index.normal_index + 0],
-			attrib.normals[3 * index.normal_index + 1],
-			attrib.normals[3 * index.normal_index + 2]
-			};
-			
-			if (uniqueVertices.count(vertex) == 0) {
-				uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-				vertices.push_back(vertex);
-			}
-
-			indices.push_back(uniqueVertices[vertex]);
-		}
-	}
-}
-
-void Window::gltfLoad()
-{
-	vertices = _gltfloader->GetVertexBuffer();
-	indices = _gltfloader->GetIndexBuffer();
-}
-
-
 void Window::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
 {
 	// Check if image format supports linear blitting
@@ -1580,5 +1531,186 @@ VkShaderModule Window::CreateShaderModule(const std::vector<char>& code)
 	return _shaderModule;
 }
 
+void Window::modelLoader()
+{
+	std::string filename = "../models/Duck/glTF/Duck.gltf";
 
+	tinygltf::Model glTFInput;
+	tinygltf::TinyGLTF gltfContext;
+	std::string error, warning;
 
+	bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, filename);
+
+	// Pass some Vulkan resources required for setup and rendering to the glTF model loading class
+	VkDevice device = _renderer->GetVulkanDevice();
+	VkQueue queue = _renderer->GetVulkanQueue();
+
+	if (fileLoaded) {
+		// glTFModel.loadImages(glTFInput);
+		//loadMaterials(glTFInput, materials);
+		//loadTextures(glTFInput, textures);
+		const tinygltf::Scene& scene = glTFInput.scenes[0];
+		for (size_t i = 0; i < scene.nodes.size(); i++) {
+			const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
+			loadNode(node, glTFInput, nullptr, indices, vertices);
+		}
+	}
+}
+
+void Window::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, Window::Node* parent, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer)
+{
+
+	Window::Node node{};
+	node.matrix = glm::mat4(1.0f);
+
+	// Get the local node matrix
+	// It's either made up from translation, rotation, scale or a 4x4 matrix
+	if (inputNode.translation.size() == 3) {
+		node.matrix = glm::translate(node.matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
+	}
+	if (inputNode.rotation.size() == 4) {
+		glm::quat q = glm::make_quat(inputNode.rotation.data());
+		node.matrix *= glm::mat4(q);
+	}
+	if (inputNode.scale.size() == 3) {
+		node.matrix = glm::scale(node.matrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
+	}
+	if (inputNode.matrix.size() == 16) {
+		node.matrix = glm::make_mat4x4(inputNode.matrix.data());
+	};
+
+	// Load node's children
+	if (inputNode.children.size() > 0) {
+		for (size_t i = 0; i < inputNode.children.size(); i++) {
+			loadNode(input.nodes[inputNode.children[i]], input, &node, indexBuffer, vertexBuffer);
+		}
+	}
+
+	// If the node contains mesh data, we load vertices and indices from the buffers
+	// In glTF this is done via accessors and buffer views
+	if (inputNode.mesh > -1) {
+		const tinygltf::Mesh mesh = input.meshes[inputNode.mesh];
+		// Iterate through all primitives of this node's mesh
+		for (size_t i = 0; i < mesh.primitives.size(); i++) {
+			const tinygltf::Primitive& glTFPrimitive = mesh.primitives[i];
+			uint32_t firstIndex = static_cast<uint32_t>(indexBuffer.size());
+			uint32_t vertexStart = static_cast<uint32_t>(vertexBuffer.size());
+			uint32_t indexCount = 0;
+			// Vertices
+			{
+				const float* positionBuffer = nullptr;
+				const float* normalsBuffer = nullptr;
+				const float* texCoordsBuffer = nullptr;
+				size_t vertexCount = 0;
+
+				// Get buffer data for vertex normals
+				if (glTFPrimitive.attributes.find("POSITION") != glTFPrimitive.attributes.end()) {
+					const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("POSITION")->second];
+					const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+					positionBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+					vertexCount = accessor.count;
+				}
+				// Get buffer data for vertex normals
+				if (glTFPrimitive.attributes.find("NORMAL") != glTFPrimitive.attributes.end()) {
+					const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("NORMAL")->second];
+					const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+					normalsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+				}
+				// Get buffer data for vertex texture coordinates
+				// glTF supports multiple sets, we only load the first one
+				if (glTFPrimitive.attributes.find("TEXCOORD_0") != glTFPrimitive.attributes.end()) {
+					const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("TEXCOORD_0")->second];
+					const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+					texCoordsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+				}
+
+				// Append data to model's vertex buffer
+				for (size_t v = 0; v < vertexCount; v++) {
+					Vertex vert{};
+					vert.pos = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
+					vert.normal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
+					vert.texCoord = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
+					vert.color = glm::vec3(1.0f);
+					vertexBuffer.push_back(vert);
+				}
+			}
+			// Indices
+			{
+				const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.indices];
+				const tinygltf::BufferView& bufferView = input.bufferViews[accessor.bufferView];
+				const tinygltf::Buffer& buffer = input.buffers[bufferView.buffer];
+
+				indexCount += static_cast<uint32_t>(accessor.count);
+
+				// glTF supports different component types of indices
+				switch (accessor.componentType) {
+				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
+					uint32_t* buf = new uint32_t[accessor.count];
+					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint32_t));
+					for (size_t index = 0; index < accessor.count; index++) {
+						indexBuffer.push_back(buf[index] + vertexStart);
+					}
+					break;
+				}
+				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
+					uint16_t* buf = new uint16_t[accessor.count];
+					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint16_t));
+					for (size_t index = 0; index < accessor.count; index++) {
+						indexBuffer.push_back(buf[index] + vertexStart);
+					}
+					break;
+				}
+				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
+					uint8_t* buf = new uint8_t[accessor.count];
+					memcpy(buf, &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(uint8_t));
+					for (size_t index = 0; index < accessor.count; index++) {
+						indexBuffer.push_back(buf[index] + vertexStart);
+					}
+					break;
+				}
+				default:
+					std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+					return;
+				}
+			}
+			Window::Primitive primitive{};
+			primitive.firstIndex = firstIndex;
+			primitive.indexCount = indexCount;
+			primitive.materialIndex = glTFPrimitive.material;
+			node.mesh.primitives.push_back(primitive);
+		}
+	}
+
+	if (parent) {
+		parent->children.push_back(node);
+	}
+	else {
+		nodess.push_back(node);
+	}
+
+}
+
+void Window::loadTextures(tinygltf::Model& input)
+{
+	textures.resize(input.textures.size());
+	for (size_t i = 0; i < input.textures.size(); i++) {
+		textures[i].imageIndex = input.textures[i].source;
+	}
+}
+
+void Window::loadMaterials(tinygltf::Model& input)
+{
+	materials.resize(input.materials.size());
+	for (size_t i = 0; i < input.materials.size(); i++) {
+		// We only read the most basic properties required for our sample
+		tinygltf::Material glTFMaterial = input.materials[i];
+		// Get the base color factor
+		if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
+			materials[i].baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
+		}
+		// Get base color texture index
+		if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
+			materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
+		}
+	}
+}

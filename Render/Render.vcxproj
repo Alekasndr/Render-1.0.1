@@ -157,7 +157,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GltfLoader.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shared.cpp" />
@@ -167,7 +166,6 @@
   <ItemGroup>
     <ClInclude Include="BUILD_OPTIONS.h" />
     <ClInclude Include="allincludes.h" />
-    <ClInclude Include="GltfLoader.h" />
     <ClInclude Include="Platform.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shared.h" />
