@@ -148,7 +148,7 @@ void Renderer::_InitDevice()
 		vkGetPhysicalDeviceFeatures(_gpu, &supported_physical_device_feature);
 		supported_physical_device_feature.samplerAnisotropy = VK_TRUE;
 		supported_physical_device_feature.sampleRateShading = VK_TRUE;
-		supported_physical_device_feature.fillModeNonSolid = VK_TRUE; /// изменить на норм
+	//	supported_physical_device_feature.fillModeNonSolid = VK_TRUE; /// изменить на норм
 		{
 			uint32_t family_count = 0;
 			vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &family_count, nullptr);

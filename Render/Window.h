@@ -92,7 +92,7 @@ private:
 
 	void updateUniformBuffer(uint32_t currentImage);
 
-	void createTextureImage();
+	void createTextureImage(void* buffer, VkDeviceSize imageSize, uint32_t texWidth, uint32_t texHeight);
 	void destroyTextureImage();
 
 	void createTextureImageView();
@@ -229,12 +229,13 @@ private:
 	struct Texture {
 		int32_t imageIndex;
 	};
+	
+
 
 	std::vector<Window::Material> materials;
 	std::vector<Window::Node> nodess;
-	//std::vector<Renderer::Image> images;
+//	std::vector<Window::VkImage> imagess;
 	std::vector<Window::Texture> textures;
-
 	
 	void modelLoader();
 	void loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, Window::Node* parent, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer);

@@ -24,7 +24,6 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	_surface_size_y = size_y;
 	_window_name    = name;
 
-	modelLoader();
 	_InitOSWindow();
 	_InitSurface();
 	_InitSwapchain();
@@ -36,7 +35,7 @@ Window::Window(Renderer * renderer, uint32_t size_x, uint32_t size_y, std::strin
 	createColorResources();
 	_InitDepthStencilImage();
 	_InitFramebuffers();
-	createTextureImage();
+	modelLoader();
 	createTextureImageView();
 	createTextureSampler();
 	createVertexBuffer();
@@ -508,7 +507,7 @@ void Window::_CreateGraphicsPipeline()
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer.depthClampEnable = VK_FALSE;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
-	rasterizer.polygonMode = VK_POLYGON_MODE_LINE; // VK_POLYGON_MODE_FILL
+	rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // VK_POLYGON_MODE_LINE
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -1017,18 +1016,36 @@ void Window::updateUniformBuffer(uint32_t currentImage)
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, 
 		std::chrono::seconds::period>(currentTime - startTime).count();
-
+	
 	UniformBufferObject ubo{};
-	ubo.model = glm::rotate(glm::mat4(1.0f), 
-		time * glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	
+	
+	ubo.model = glm::rotate(glm::mat4(1.0f),
+		time * glm::radians(30.0f), glm::vec3(0.0f, 0.1f, 0.0f));
+	
 
-	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), 
-		glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	//ubo.model = glm::mat4(1.0f);
 
+	ubo.model = glm::scale(ubo.model, glm::vec3(0.02f, 0.02f, 0.02f));
+
+	
+	ubo.view = glm::lookAt(glm::vec3(8.0f, 8.0f, 0.0f), 
+		glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	
+	
+	ubo.proj = glm::perspective(glm::radians(45.0f), (float)_surface_size_x / (float)_surface_size_y, 1.0f, 256.0f);
+	
+	ubo.proj[1][1] *= -1;
+	
+	/*
 	ubo.proj = glm::perspective(glm::radians(45.0f), 
-		_surface_size_x / (float)_surface_size_y, 0.1f, 10.0f);
+		_surface_size_x / (float)_surface_size_y, 0.1f, 512.0f);
 
 	ubo.proj[1][1] *= -1;
+	*/
+
+
+	ubo.lightPos = glm::vec4(12.0f, 12.0f, 12.0f, 0.0f);
 
 	void* data;
 	vkMapMemory(device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
@@ -1036,15 +1053,20 @@ void Window::updateUniformBuffer(uint32_t currentImage)
 	vkUnmapMemory(device, uniformBuffersMemory[currentImage]);
 }
 
-void Window::createTextureImage()
+void Window::createTextureImage(void* buffer, VkDeviceSize imageSize, uint32_t texWidth, uint32_t texHeight)
 {
 	auto device = _renderer->GetVulkanDevice();
-	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-	VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+//	uint32_t texWidth, texHeight, texChannels;
+
+	//stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	
+	//VkDeviceSize imageSize = texWidth * texHeight * 4;
+	/*
 	if (!pixels) {
 		throw std::runtime_error("Failed to load texture image!");
 	}
+	*/
 
 	mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
@@ -1058,10 +1080,10 @@ void Window::createTextureImage()
 
 	void* data;
 	vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
-	memcpy(data, pixels, static_cast<size_t>(imageSize));
+	memcpy(data, buffer, imageSize);
 	vkUnmapMemory(device, stagingBufferMemory);
 
-	stbi_image_free(pixels);
+	//stbi_image_free(pixels);
 
 	createImage(texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, 
 		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | 
@@ -1546,9 +1568,9 @@ void Window::modelLoader()
 	VkQueue queue = _renderer->GetVulkanQueue();
 
 	if (fileLoaded) {
-		// glTFModel.loadImages(glTFInput);
-		//loadMaterials(glTFInput, materials);
-		//loadTextures(glTFInput, textures);
+		loadImages(glTFInput);
+		loadMaterials(glTFInput);
+		loadTextures(glTFInput);
 		const tinygltf::Scene& scene = glTFInput.scenes[0];
 		for (size_t i = 0; i < scene.nodes.size(); i++) {
 			const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
@@ -1713,4 +1735,41 @@ void Window::loadMaterials(tinygltf::Model& input)
 			materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
 		}
 	}
+}
+
+void Window::loadImages(tinygltf::Model& input)
+{
+	// Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
+	// loading them from disk, we fetch them from the glTF loader and upload the buffers
+	//imagess.resize(input.images.size());
+	for (size_t i = 0; i < input.images.size(); i++) {
+		tinygltf::Image& glTFImage = input.images[0];
+		// Get the image data from the glTF loader
+		unsigned char* gltfImageBuffer = nullptr;
+		VkDeviceSize gltfBufferSize = 0;
+		bool deleteBuffer = false;
+		// We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
+		if (glTFImage.component == 3) {
+			gltfBufferSize = glTFImage.width * glTFImage.height * 4;
+			gltfImageBuffer = new unsigned char[gltfBufferSize];
+			unsigned char* rgba = gltfImageBuffer;
+			unsigned char* rgb = &glTFImage.image[0];
+			for (size_t i = 0; i < glTFImage.width * glTFImage.height; ++i) {
+				memcpy(rgba, rgb, sizeof(unsigned char) * 3);
+				rgba += 4;
+				rgb += 3;
+			}
+			deleteBuffer = true;
+		}
+		else {
+			gltfImageBuffer = &glTFImage.image[0];
+			gltfBufferSize = glTFImage.image.size();
+		}
+		createTextureImage(gltfImageBuffer, gltfBufferSize, glTFImage.width, glTFImage.height);
+		// Load texture from image buffer
+		if (deleteBuffer) {
+			delete gltfImageBuffer;
+		}
+	}
+	
 }
