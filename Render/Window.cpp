@@ -674,7 +674,7 @@ void Window::_CreateCommandBuffers()
 
 		std::array<VkClearValue, 2> clearValues{};
 		clearValues[0].depthStencil = { 1.0f, 0 };
-		clearValues[1].color = { 1.0f, 1.0f, 1.0f, 1.0f }; // cмена цвета фона
+		clearValues[1].color = { 0.0f, 0.0f, 0.0f, 1.0f }; // cмена цвета фона
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		renderPassInfo.pClearValues = clearValues.data();
@@ -1111,7 +1111,7 @@ void Window::destroyTextureImage()
 
 void Window::createTextureImageView()
 {
-	textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	textureImageView = createImageView(imagess[0], VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 	std::cout << "Vulkan: Create texture image view seccessfully" << std::endl;
 }
 
@@ -1741,7 +1741,7 @@ void Window::loadImages(tinygltf::Model& input)
 {
 	// Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
 	// loading them from disk, we fetch them from the glTF loader and upload the buffers
-	//imagess.resize(input.images.size());
+	imagess.resize(input.images.size());
 	for (size_t i = 0; i < input.images.size(); i++) {
 		tinygltf::Image& glTFImage = input.images[0];
 		// Get the image data from the glTF loader
@@ -1766,6 +1766,10 @@ void Window::loadImages(tinygltf::Model& input)
 			gltfBufferSize = glTFImage.image.size();
 		}
 		createTextureImage(gltfImageBuffer, gltfBufferSize, glTFImage.width, glTFImage.height);
+		if (i == 0) {
+
+		}
+		imagess[i] = textureImage;
 		// Load texture from image buffer
 		if (deleteBuffer) {
 			delete gltfImageBuffer;

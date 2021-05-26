@@ -161,7 +161,7 @@ void Renderer::_InitDevice()
 			for (uint32_t i = 0; i < family_count; ++i) {
 				if (familu_property_list[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 					found = true;
-					_graphics_family_index = i;
+					queueFamilies.graphicsFamily = i;
 				}
 			}
 			if (!found) {
@@ -170,6 +170,19 @@ void Renderer::_InitDevice()
 				std::exit(-1);
 			}
 
+
+			bool found1 = false;
+			for (uint32_t i = 0; i < family_count; ++i) {
+				if (familu_property_list[i].queueFlags & VK_QUEUE_TRANSFER_BIT && familu_property_list[i].queueFlags &~ VK_QUEUE_GRAPHICS_BIT) {
+					found1 = true;
+					queueFamilies.transferFamile = i;
+				}	
+			}
+			if (!found) {
+				std::cout << "Vulkan ERROR: Queue family supporting transfer not found." << std::endl;
+				assert(0 && "Vulkan ERROR: Queue family supporting transfer not found.");
+				std::exit(-1);
+			}
 		}
 
 		/*
@@ -190,7 +203,7 @@ void Renderer::_InitDevice()
 		VkDeviceQueueCreateInfo device_queue_create_info{};
 		device_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		device_queue_create_info.pNext = VK_NULL_HANDLE;
-		device_queue_create_info.queueFamilyIndex = _graphics_family_index;
+		device_queue_create_info.queueFamilyIndex = queueFamilies.graphicsFamily;
 		device_queue_create_info.queueCount = 1;
 		device_queue_create_info.pQueuePriorities = queue_priorities;
 		device_queue_create_info.pNext = NULL;
@@ -209,7 +222,7 @@ void Renderer::_InitDevice()
 
 		ErrorCheck(vkCreateDevice(_gpu, &device_create_info, nullptr, &_device));
 
-		vkGetDeviceQueue(_device, _graphics_family_index, 0, &_queue);
+		vkGetDeviceQueue(_device, queueFamilies.graphicsFamily, 0, &_queue);
 		//	vkGetDeviceQueue(_device, _graphics_family_index, 1, &_queue);
 
 		std::cout << "Vulkan: Device successfully initialized "

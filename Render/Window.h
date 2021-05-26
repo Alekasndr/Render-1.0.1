@@ -229,12 +229,10 @@ private:
 	struct Texture {
 		int32_t imageIndex;
 	};
-	
-
 
 	std::vector<Window::Material> materials;
 	std::vector<Window::Node> nodess;
-//	std::vector<Window::VkImage> imagess;
+	std::vector<VkImage> imagess;
 	std::vector<Window::Texture> textures;
 	
 	void modelLoader();

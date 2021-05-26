@@ -55,6 +55,13 @@ private:
 
 	uint32_t          _graphics_family_index = 0;
 
+	struct QueueFamilyIndices {
+		uint32_t graphicsFamily;
+		uint32_t transferFamile;
+	};
+
+	QueueFamilyIndices queueFamilies{};
+
 	Window*           _window     = nullptr;
 
 	std::vector<const char*> _instance_layers;
